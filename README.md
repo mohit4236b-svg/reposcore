@@ -80,6 +80,8 @@ cd reposcore
 python -m venv venv
 venv\Scripts\activate       # Windows
 pip install -r requirements.txt
+pip install streamlit
+
 ```
 
 Create a `.env` file with your own GitHub personal access token:
