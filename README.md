@@ -1,6 +1,5 @@
 # reposcore
 
-# reposcore
 
 # ⭐ RepoScore: GitHub Repository Quality Predictor
 
