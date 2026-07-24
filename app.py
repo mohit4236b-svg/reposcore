@@ -1,95 +1,136 @@
-import streamlit as st
-import requests
+import base64
 import os
 import joblib
 import numpy as np
-import base64
 import pandas as pd
-from scipy.sparse import hstack
+import requests
+import streamlit as st
 from dotenv import load_dotenv
+from scipy.sparse import hstack
 
-load_dotenv(dotenv_path=".env")
+# Load environment variables
+load_dotenv()
+
+# Page configuration
+st.set_page_config(
+    page_title="RepoScore", 
+    page_icon="⭐", 
+    layout="wide"
+)
+
+# Set up GitHub API Headers safely
 token = os.getenv("GITHUB_TOKEN")
-headers = {
-    "Authorization": f"token {token}",
-    "Accept": "application/vnd.github+json"
-}
+headers = {"Accept": "application/vnd.github+json"}
+if token:
+    headers["Authorization"] = f"Bearer {token}"
 
-# Load trained model, vectorizers, and scaler
-rf_model = joblib.load(r"C:\reposcore_data\rf_model.pkl")
-tfidf_readme = joblib.load(r"C:\reposcore_data\tfidf_readme.pkl")
-tfidf_topics = joblib.load(r"C:\reposcore_data\tfidf_topics.pkl")
-scaler = joblib.load(r"C:\reposcore_data\scaler.pkl")
+# Load models safely using relative paths
+@st.cache_resource
+def load_ml_assets():
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    model_dir = os.path.join(base_dir, "models")  # Store .pkl files in a /models folder!
+    
+    rf_model = joblib.load(os.path.join(model_dir, "rf_model.pkl"))
+    tfidf_readme = joblib.load(os.path.join(model_dir, "tfidf_readme.pkl"))
+    tfidf_topics = joblib.load(os.path.join(model_dir, "tfidf_topics.pkl"))
+    scaler = joblib.load(os.path.join(model_dir, "scaler.pkl"))
+    
+    return rf_model, tfidf_readme, tfidf_topics, scaler
 
-st.set_page_config(page_title="RepoScore", page_icon="⭐")
+try:
+    rf_model, tfidf_readme, tfidf_topics, scaler = load_ml_assets()
+except Exception as e:
+    st.error("Error loading trained models. Please check if model files exist in the 'models/' folder.")
+    st.stop()
+
+# Application UI
 st.title("⭐ RepoScore: GitHub Repository Quality Predictor")
-st.write("Enter a GitHub repo (e.g. `pandas-dev/pandas`) to predict its quality score.")
+st.caption("Predict the overall quality class and probability of any public GitHub repository.")
 
-repo_input = st.text_input("Repo (owner/name)", placeholder="scikit-learn/scikit-learn")
+repo_input = st.text_input("GitHub Repo (owner/name):", placeholder="scikit-learn/scikit-learn")
 
-if st.button("Predict") and repo_input:
-    with st.spinner("Fetching repo data..."):
-        repo_resp = requests.get(f"https://api.github.com/repos/{repo_input}", headers=headers)
+if st.button("Predict Quality", type="primary") and repo_input:
+    clean_repo = repo_input.strip().strip("/")
+    
+    with st.spinner("Fetching data from GitHub API..."):
+        repo_resp = requests.get(f"https://api.github.com/repos/{clean_repo}", headers=headers)
 
-        if repo_resp.status_code != 200:
-            st.error("Repo not found or API error.")
+        if repo_resp.status_code == 404:
+            st.error("Repository not found. Double check the `owner/repository` name.")
+        elif repo_resp.status_code == 403:
+            st.error("GitHub API rate limit exceeded. Add a `GITHUB_TOKEN` to your `.env` file.")
+        elif repo_resp.status_code != 200:
+            st.error(f"GitHub API Error: {repo_resp.status_code}")
         else:
             repo = repo_resp.json()
 
-            # Fetch README text
-            readme_resp = requests.get(f"https://api.github.com/repos/{repo_input}/readme", headers=headers)
+            # Fetch README
+            readme_resp = requests.get(f"https://api.github.com/repos/{clean_repo}/readme", headers=headers)
             readme_text = ""
             readme_size = 0
             has_readme = readme_resp.status_code == 200
+            
             if has_readme:
-                readme_size = readme_resp.json().get("size", 0)
-                content_b64 = readme_resp.json().get("content", "")
+                readme_data = readme_resp.json()
+                readme_size = readme_data.get("size", 0)
+                content_b64 = readme_data.get("content", "")
                 try:
                     readme_text = base64.b64decode(content_b64).decode("utf-8", errors="ignore")
                 except Exception:
                     readme_text = ""
 
-            # Get topics (already included in the repo response)
+            # Extract metadata & compute features
             topics = repo.get("topics", [])
             topics_text = " ".join(topics)
 
-            # Compute derived features
             created_at = pd.to_datetime(repo["created_at"])
             pushed_at = pd.to_datetime(repo["pushed_at"])
             now = pd.Timestamp.now(tz="UTC")
             repo_age_days = (now - created_at).days
             days_since_last_commit = (now - pushed_at).days
 
-            # Build feature vector matching training format
+            # Construct feature set
             structured = np.array([[
-                repo["stargazers_count"],
-                repo["forks_count"],
-                repo["open_issues_count"],
+                repo.get("stargazers_count", 0),
+                repo.get("forks_count", 0),
+                repo.get("open_issues_count", 0),
                 readme_size,
                 repo_age_days,
                 days_since_last_commit,
                 int(has_readme)
             ]])
 
+            # Transform features
             X_readme = tfidf_readme.transform([readme_text])
             X_topics = tfidf_topics.transform([topics_text])
             X = hstack([X_readme, X_topics, structured])
             X_scaled = scaler.transform(X)
 
+            # ML Predictions
             prediction = rf_model.predict(X_scaled)[0]
             probability = rf_model.predict_proba(X_scaled)[0][1]
 
-            st.success(f"Found: {repo['full_name']}")
-            st.write(f"⭐ Stars: {repo['stargazers_count']}")
-            st.write(f"🍴 Forks: {repo['forks_count']}")
-            st.write(f"🐛 Open issues: {repo['open_issues_count']}")
-            st.write(f"🕒 Last updated: {repo['pushed_at']}")
+            st.subheader(f"Results for [{repo['full_name']}]({repo['html_url']})")
+
+            # Clean UI metrics
+            col1, col2, col3, col4 = st.columns(4)
+            col1.metric("⭐ Stars", repo["stargazers_count"])
+            col2.metric("🍴 Forks", repo["forks_count"])
+            col3.metric("🐛 Open Issues", repo["open_issues_count"])
+            col4.metric("📅 Age (Days)", repo_age_days)
+
             if topics:
-                st.write(f"🏷️ Topics: {', '.join(topics)}")
+                st.write("**Topics:** " + ", ".join([f"`{t}`" for t in topics]))
 
             st.divider()
-            if prediction == 1:
-                st.markdown("### 🟢 Predicted: **Quality Repo**")
-            else:
-                st.markdown("### 🔴 Predicted: **Not Quality**")
-            st.write(f"Confidence: {probability:.1%}")
+
+            # Display prediction banner
+            res_col1, res_col2 = st.columns([2, 1])
+            with res_col1:
+                if prediction == 1:
+                    st.success("### 🟢 High Quality Repository")
+                else:
+                    st.warning("### 🔴 Low Quality / Unmaintained Repository")
+            
+            with res_col2:
+                st.metric("Quality Score Confidence", f"{probability:.1%}")
