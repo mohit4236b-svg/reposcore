@@ -1,5 +1,6 @@
 import base64
 import os
+import pickle
 import joblib
 import numpy as np
 import pandas as pd
@@ -18,49 +19,72 @@ st.set_page_config(
     layout="wide"
 )
 
-# Set up GitHub API Headers safely
+# Configure GitHub API Headers safely
 token = os.getenv("GITHUB_TOKEN")
 headers = {"Accept": "application/vnd.github+json"}
 if token:
     headers["Authorization"] = f"Bearer {token}"
 
-# Load models safely using relative paths
+
+def safe_load(file_path):
+    """Attempt loading with joblib first; fall back to built-in pickle if joblib fails."""
+    try:
+        return joblib.load(file_path)
+    except Exception:
+        with open(file_path, "rb") as f:
+            return pickle.load(f)
+
+
 @st.cache_resource
 def load_ml_assets():
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    model_dir = os.path.join(base_dir, "models")  # Store .pkl files in a /models folder!
+    model_dir = os.path.join(base_dir, "models")
     
-    rf_model = joblib.load(os.path.join(model_dir, "rf_model.pkl"))
-    tfidf_readme = joblib.load(os.path.join(model_dir, "tfidf_readme.pkl"))
-    tfidf_topics = joblib.load(os.path.join(model_dir, "tfidf_topics.pkl"))
-    scaler = joblib.load(os.path.join(model_dir, "scaler.pkl"))
+    files = {
+        "rf_model": "rf_model.pkl",
+        "tfidf_readme": "tfidf_vectorizer.pkl",
+        "tfidf_topics": "tfidf_topics.pkl",
+        "scaler": "scaler.pkl"
+    }
     
-    return rf_model, tfidf_readme, tfidf_topics, scaler
+    loaded = {}
+    for key, filename in files.items():
+        file_path = os.path.join(model_dir, filename)
+        
+        if not os.path.exists(file_path):
+            st.error(f"❌ Missing file: `{filename}` was not found in the `models/` directory.")
+            st.stop()
+            
+        try:
+            loaded[key] = safe_load(file_path)
+        except Exception as err:
+            st.error(f"❌ Failed loading `{filename}`:")
+            st.exception(err)
+            st.stop()
+            
+    return loaded["rf_model"], loaded["tfidf_readme"], loaded["tfidf_topics"], loaded["scaler"]
 
-try:
-    rf_model, tfidf_readme, tfidf_topics, scaler = load_ml_assets()
-except Exception as e:
-    st.error("Error loading trained models. Please check if model files exist in the 'models/' folder.")
-    st.stop()
 
-# Application UI
+rf_model, tfidf_readme, tfidf_topics, scaler = load_ml_assets()
+
+# Application Interface
 st.title("⭐ RepoScore: GitHub Repository Quality Predictor")
-st.caption("Predict the overall quality class and probability of any public GitHub repository.")
+st.caption("Analyze a public GitHub repository to predict its overall quality score.")
 
-repo_input = st.text_input("GitHub Repo (owner/name):", placeholder="scikit-learn/scikit-learn")
+repo_input = st.text_input("Enter Repository (owner/name):", placeholder="scikit-learn/scikit-learn")
 
 if st.button("Predict Quality", type="primary") and repo_input:
     clean_repo = repo_input.strip().strip("/")
     
-    with st.spinner("Fetching data from GitHub API..."):
+    with st.spinner("Fetching repo data from GitHub API..."):
         repo_resp = requests.get(f"https://api.github.com/repos/{clean_repo}", headers=headers)
 
         if repo_resp.status_code == 404:
-            st.error("Repository not found. Double check the `owner/repository` name.")
+            st.error("Repository not found. Please verify the `owner/repository` name.")
         elif repo_resp.status_code == 403:
             st.error("GitHub API rate limit exceeded. Add a `GITHUB_TOKEN` to your `.env` file.")
         elif repo_resp.status_code != 200:
-            st.error(f"GitHub API Error: {repo_resp.status_code}")
+            st.error(f"GitHub API returned error status: {repo_resp.status_code}")
         else:
             repo = repo_resp.json()
 
@@ -79,7 +103,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
                 except Exception:
                     readme_text = ""
 
-            # Extract metadata & compute features
+            # Extract Topics & Metadata
             topics = repo.get("topics", [])
             topics_text = " ".join(topics)
 
@@ -89,7 +113,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
             repo_age_days = (now - created_at).days
             days_since_last_commit = (now - pushed_at).days
 
-            # Construct feature set
+            # Construct structured feature array
             structured = np.array([[
                 repo.get("stargazers_count", 0),
                 repo.get("forks_count", 0),
@@ -100,23 +124,23 @@ if st.button("Predict Quality", type="primary") and repo_input:
                 int(has_readme)
             ]])
 
-            # Transform features
+            # Transform input features
             X_readme = tfidf_readme.transform([readme_text])
             X_topics = tfidf_topics.transform([topics_text])
             X = hstack([X_readme, X_topics, structured])
             X_scaled = scaler.transform(X)
 
-            # ML Predictions
+            # Generate Predictions
             prediction = rf_model.predict(X_scaled)[0]
             probability = rf_model.predict_proba(X_scaled)[0][1]
 
+            # Display Results UI
             st.subheader(f"Results for [{repo['full_name']}]({repo['html_url']})")
 
-            # Clean UI metrics
             col1, col2, col3, col4 = st.columns(4)
-            col1.metric("⭐ Stars", repo["stargazers_count"])
-            col2.metric("🍴 Forks", repo["forks_count"])
-            col3.metric("🐛 Open Issues", repo["open_issues_count"])
+            col1.metric("⭐ Stars", repo.get("stargazers_count", 0))
+            col2.metric("🍴 Forks", repo.get("forks_count", 0))
+            col3.metric("🐛 Open Issues", repo.get("open_issues_count", 0))
             col4.metric("📅 Age (Days)", repo_age_days)
 
             if topics:
@@ -124,13 +148,12 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
             st.divider()
 
-            # Display prediction banner
             res_col1, res_col2 = st.columns([2, 1])
             with res_col1:
                 if prediction == 1:
-                    st.success("### 🟢 High Quality Repository")
+                    st.success("### 🟢 Predicted: High Quality Repository")
                 else:
-                    st.warning("### 🔴 Low Quality / Unmaintained Repository")
+                    st.warning("### 🔴 Predicted: Low Quality / Unmaintained Repository")
             
             with res_col2:
-                st.metric("Quality Score Confidence", f"{probability:.1%}")
+                st.metric("Model Confidence", f"{probability:.1%}")
