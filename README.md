@@ -1,5 +1,4 @@
 # reposcore
-
 # ⭐ RepoScore: GitHub Repository Quality Predictor
 
 RepoScore predicts whether a GitHub repository is likely to be a "high-quality" project based on its metadata, README content, and topic tags. Enter any public GitHub repo and get an instant quality prediction, powered by a Random Forest classifier trained on ~2,200 real repositories.
