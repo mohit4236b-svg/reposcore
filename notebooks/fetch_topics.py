@@ -18,8 +18,9 @@ session = requests.Session()
 retries = Retry(total=5, backoff_factor=1, status_forcelist=[500, 502, 503, 504])
 session.mount("https://", HTTPAdapter(max_retries=retries))
 
-output_dir = r"C:\reposcore_data"
-df = pd.read_csv(f"{output_dir}\\repos_combined_final.csv")
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+output_dir = os.path.join(BASE_DIR, "models")
+df = pd.read_csv(os.path.join(output_dir, "repos_combined_final.csv"))
 
 topics_list = []
 
@@ -39,7 +40,7 @@ for i, row in df.iterrows():
 
     if (i + 1) % 100 == 0:
         try:
-            pd.Series(topics_list).to_csv(f"{output_dir}\\topics_partial.csv", index=False)
+            pd.Series(topics_list).to_csv(os.path.join(output_dir, "topics_partial.csv"), index=False)
             print(f"  Progress saved at {i+1}")
         except Exception as e:
             print(f"  Warning: could not save progress: {e}")
@@ -51,7 +52,7 @@ df["topics"] = topics_list
 saved = False
 for attempt in range(5):
     try:
-        df.to_csv(f"{output_dir}\\repos_final_with_topics.csv", index=False)
+        df.to_csv(os.path.join(output_dir, "repos_final_with_topics.csv"), index=False)
         saved = True
         break
     except Exception as e:
@@ -59,6 +60,6 @@ for attempt in range(5):
         time.sleep(5)
 
 if saved:
-    print(f"Done. Saved {len(df)} repos with topics to {output_dir}\\repos_final_with_topics.csv")
+    print(f"Done. Saved {len(df)} repos with topics to {os.path.join(output_dir, 'repos_final_with_topics.csv')}")
 else:
     print("Failed to save after 5 attempts")

@@ -15,7 +15,10 @@ headers = {
     "Accept": "application/vnd.github+json"
 }
 
-output_dir = r"C:\reposcore_data"
+import os
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+output_dir = os.path.join(BASE_DIR, "models")
 os.makedirs(output_dir, exist_ok=True)
 
 session = requests.Session()
@@ -66,6 +69,6 @@ for attempt in range(5):
         time.sleep(5)
 
 if saved:
-    print(f"Done. Saved {len(df)} repos to {output_dir}\\repos_with_readme.csv")
+    print(f"Done. Saved {len(df)} repos to {os.path.join(output_dir, 'repos_with_readme.csv')}")
 else:
     print("Failed to save after 5 attempts")
