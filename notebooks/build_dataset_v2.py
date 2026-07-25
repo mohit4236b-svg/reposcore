@@ -1,13 +1,16 @@
 import pandas as pd
 
-output_dir = r"C:\reposcore_data"
+import os
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+output_dir = os.path.join(BASE_DIR, "models")
 
 # Load batch 1 (already has readme_text)
-batch1 = pd.read_csv(f"{output_dir}\\repos_with_readme.csv")
+batch1 = pd.read_csv(os.path.join(output_dir, "repos_with_readme.csv"))
 
 # Load batch 2 pieces and merge them
-batch2_basic = pd.read_csv(f"{output_dir}\\repos_basic_batch2.csv")
-batch2_readme = pd.read_csv(f"{output_dir}\\repos_enriched_batch2_with_readme.csv")
+batch2_basic = pd.read_csv(os.path.join(output_dir, "repos_basic_batch2.csv"))
+batch2_readme = pd.read_csv(os.path.join(output_dir, "repos_enriched_batch2_with_readme.csv"))
 
 batch2 = batch2_basic.merge(
     batch2_readme[["full_name", "has_readme", "readme_size", "has_ci", "has_tests", "readme_text"]],
@@ -42,5 +45,5 @@ print("Total repos after merging and cleaning:", len(df))
 print("Quality label distribution:")
 print(df["quality"].value_counts())
 
-df.to_csv(f"{output_dir}\\repos_combined_final.csv", index=False)
-print(f"Saved combined dataset to {output_dir}\\repos_combined_final.csv")
+df.to_csv(os.path.join(output_dir, "repos_combined_final.csv"), index=False)
+print(f"Saved combined dataset to {os.path.join(output_dir, 'repos_combined_final.csv')}")

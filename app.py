@@ -9,13 +9,15 @@ import streamlit as st
 from dotenv import load_dotenv
 from scipy.sparse import hstack
 
+from reposcore_utils import strip_badges
+
 # Load environment variables
 load_dotenv()
 
 # Page configuration
 st.set_page_config(
-    page_title="RepoScore", 
-    page_icon="⭐", 
+    page_title="RepoScore",
+    page_icon="⭐",
     layout="wide"
 )
 
@@ -39,33 +41,43 @@ def safe_load(file_path):
 def load_ml_assets():
     base_dir = os.path.dirname(os.path.abspath(__file__))
     model_dir = os.path.join(base_dir, "models")
-    
+
     files = {
         "rf_model": "rf_model.pkl",
-        "tfidf_readme": "tfidf_vectorizer.pkl",
+        "tfidf_readme": "tfidf_readme.pkl",
         "tfidf_topics": "tfidf_topics.pkl",
         "scaler": "scaler.pkl"
     }
-    
+
     loaded = {}
     for key, filename in files.items():
         file_path = os.path.join(model_dir, filename)
-        
+
         if not os.path.exists(file_path):
             st.error(f"❌ Missing file: `{filename}` was not found in the `models/` directory.")
             st.stop()
-            
+
         try:
             loaded[key] = safe_load(file_path)
         except Exception as err:
             st.error(f"❌ Failed loading `{filename}`:")
             st.exception(err)
             st.stop()
-            
+
     return loaded["rf_model"], loaded["tfidf_readme"], loaded["tfidf_topics"], loaded["scaler"]
 
 
+@st.cache_resource
+def load_explainer(_model):
+    """Build a SHAP TreeExplainer once and cache it (RF trees make this fast)."""
+    import shap
+    return shap.TreeExplainer(_model)
+
+
 rf_model, tfidf_readme, tfidf_topics, scaler = load_ml_assets()
+
+STRUCTURED_COLS = ["stars", "forks", "open_issues", "readme_size",
+                   "repo_age_days", "days_since_last_commit", "has_readme"]
 
 # Application Interface
 st.title("⭐ RepoScore: GitHub Repository Quality Predictor")
@@ -75,7 +87,7 @@ repo_input = st.text_input("Enter Repository (owner/name):", placeholder="scikit
 
 if st.button("Predict Quality", type="primary") and repo_input:
     clean_repo = repo_input.strip().strip("/")
-    
+
     with st.spinner("Fetching repo data from GitHub API..."):
         repo_resp = requests.get(f"https://api.github.com/repos/{clean_repo}", headers=headers)
 
@@ -93,7 +105,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
             readme_text = ""
             readme_size = 0
             has_readme = readme_resp.status_code == 200
-            
+
             if has_readme:
                 readme_data = readme_resp.json()
                 readme_size = readme_data.get("size", 0)
@@ -102,6 +114,11 @@ if st.button("Predict Quality", type="primary") and repo_input:
                     readme_text = base64.b64decode(content_b64).decode("utf-8", errors="ignore")
                 except Exception:
                     readme_text = ""
+
+            # IMPORTANT: same cleaning step used at training time. If this drifts
+            # from train_model.py, the model sees a different text distribution
+            # at inference than it was fit on (train/serve skew).
+            readme_text_clean = strip_badges(readme_text)
 
             # Extract Topics & Metadata
             topics = repo.get("topics", [])
@@ -125,14 +142,15 @@ if st.button("Predict Quality", type="primary") and repo_input:
             ]])
 
             # Transform input features
-            X_readme = tfidf_readme.transform([readme_text])
+            X_readme = tfidf_readme.transform([readme_text_clean])
             X_topics = tfidf_topics.transform([topics_text])
-            X = hstack([X_readme, X_topics, structured])
+            X = hstack([X_readme, X_topics, structured]).tocsr()
             X_scaled = scaler.transform(X)
+            X_dense = np.asarray(X_scaled.todense(), dtype=np.float64)
 
             # Generate Predictions
-            prediction = rf_model.predict(X_scaled)[0]
-            probability = rf_model.predict_proba(X_scaled)[0][1]
+            prediction = rf_model.predict(X_dense)[0]
+            probability = rf_model.predict_proba(X_dense)[0][1]
 
             # Display Results UI
             st.subheader(f"Results for [{repo['full_name']}]({repo['html_url']})")
@@ -154,6 +172,45 @@ if st.button("Predict Quality", type="primary") and repo_input:
                     st.success("### 🟢 Predicted: High Quality Repository")
                 else:
                     st.warning("### 🔴 Predicted: Low Quality / Unmaintained Repository")
-            
+
             with res_col2:
                 st.metric("Model Confidence", f"{probability:.1%}")
+
+            # --- Explainability: why did the model say this? ---
+            st.divider()
+            st.subheader("Why this prediction?")
+            try:
+                explainer = load_explainer(rf_model)
+                shap_values = explainer.shap_values(X_dense, check_additivity=False)
+
+                # Newer shap versions return one ndarray shaped
+                # (n_samples, n_features, n_classes); older versions return a
+                # list of one array per class. Handle both, taking class 1.
+                if isinstance(shap_values, list):
+                    sv = shap_values[1][0]
+                elif np.ndim(shap_values) == 3:
+                    sv = shap_values[0, :, 1]
+                else:
+                    sv = shap_values[0]
+
+                feature_names = (
+                    list(tfidf_readme.get_feature_names_out()) +
+                    list(tfidf_topics.get_feature_names_out()) +
+                    STRUCTURED_COLS
+                )
+                contrib = pd.DataFrame({"feature": feature_names, "shap_value": sv})
+                contrib = contrib[contrib["shap_value"] != 0]
+                top_pos = contrib.sort_values("shap_value", ascending=False).head(6)
+                top_neg = contrib.sort_values("shap_value", ascending=True).head(6)
+
+                exp_col1, exp_col2 = st.columns(2)
+                with exp_col1:
+                    st.write("**Pushed toward 'high quality':**")
+                    for _, row in top_pos.iterrows():
+                        st.write(f"- `{row['feature']}` (+{row['shap_value']:.3f})")
+                with exp_col2:
+                    st.write("**Pushed toward 'low quality':**")
+                    for _, row in top_neg.iterrows():
+                        st.write(f"- `{row['feature']}` ({row['shap_value']:.3f})")
+            except Exception as err:
+                st.caption(f"Explanation unavailable: {err}")
