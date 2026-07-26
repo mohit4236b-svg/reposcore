@@ -9,7 +9,7 @@ import streamlit as st
 from dotenv import load_dotenv
 from scipy.sparse import hstack
 
-from reposcore_utils import strip_badges
+from reposcore_utils import strip_badges, fetch_repo_features, featurize, RepoFetchError, STRUCTURED_COLS
 
 # Load environment variables
 load_dotenv()
@@ -76,89 +76,43 @@ def load_explainer(_model):
 
 rf_model, tfidf_readme, tfidf_topics, scaler = load_ml_assets()
 
-STRUCTURED_COLS = ["stars", "forks", "open_issues", "readme_size",
-                   "repo_age_days", "days_since_last_commit", "has_readme"]
-
 # Application Interface
 st.title("⭐ RepoScore: GitHub Repository Quality Predictor")
 st.caption("Analyze a public GitHub repository to predict its overall quality score.")
 
 repo_input = st.text_input("Enter Repository (owner/name):", placeholder="scikit-learn/scikit-learn")
+threshold = st.slider(
+    "Quality threshold", min_value=0.1, max_value=0.9, value=0.5, step=0.05,
+    help="Lower = higher recall, more false positives (catches more true 'quality' repos, "
+         "but calls more low-quality ones 'high' too). Higher = higher precision, more false "
+         "negatives. 5-fold CV: F1 peaks around 0.3 (precision 0.67/recall 0.89) vs the default "
+         "0.5 (precision 0.89/recall 0.47). See README for the full table."
+)
 
 if st.button("Predict Quality", type="primary") and repo_input:
-    clean_repo = repo_input.strip().strip("/")
-
     with st.spinner("Fetching repo data from GitHub API..."):
-        repo_resp = requests.get(f"https://api.github.com/repos/{clean_repo}", headers=headers)
-
-        if repo_resp.status_code == 404:
-            st.error("Repository not found. Please verify the `owner/repository` name.")
-        elif repo_resp.status_code == 403:
-            st.error("GitHub API rate limit exceeded. Add a `GITHUB_TOKEN` to your `.env` file.")
-        elif repo_resp.status_code != 200:
-            st.error(f"GitHub API returned error status: {repo_resp.status_code}")
+        try:
+            features = fetch_repo_features(repo_input, headers=headers)
+        except RepoFetchError as e:
+            st.error(str(e))
         else:
-            repo = repo_resp.json()
+            topics = features["topics"]
+            repo_age_days = features["repo_age_days"]
 
-            # Fetch README
-            readme_resp = requests.get(f"https://api.github.com/repos/{clean_repo}/readme", headers=headers)
-            readme_text = ""
-            readme_size = 0
-            has_readme = readme_resp.status_code == 200
+            X_dense = featurize(features, tfidf_readme, tfidf_topics, scaler)
 
-            if has_readme:
-                readme_data = readme_resp.json()
-                readme_size = readme_data.get("size", 0)
-                content_b64 = readme_data.get("content", "")
-                try:
-                    readme_text = base64.b64decode(content_b64).decode("utf-8", errors="ignore")
-                except Exception:
-                    readme_text = ""
-
-            # IMPORTANT: same cleaning step used at training time. If this drifts
-            # from train_model.py, the model sees a different text distribution
-            # at inference than it was fit on (train/serve skew).
-            readme_text_clean = strip_badges(readme_text)
-
-            # Extract Topics & Metadata
-            topics = repo.get("topics", [])
-            topics_text = " ".join(topics)
-
-            created_at = pd.to_datetime(repo["created_at"])
-            pushed_at = pd.to_datetime(repo["pushed_at"])
-            now = pd.Timestamp.now(tz="UTC")
-            repo_age_days = (now - created_at).days
-            days_since_last_commit = (now - pushed_at).days
-
-            # Construct structured feature array
-            structured = np.array([[
-                repo.get("stargazers_count", 0),
-                repo.get("forks_count", 0),
-                repo.get("open_issues_count", 0),
-                readme_size,
-                repo_age_days,
-                days_since_last_commit,
-                int(has_readme)
-            ]])
-
-            # Transform input features
-            X_readme = tfidf_readme.transform([readme_text_clean])
-            X_topics = tfidf_topics.transform([topics_text])
-            X = hstack([X_readme, X_topics, structured]).tocsr()
-            X_scaled = scaler.transform(X)
-            X_dense = np.asarray(X_scaled.todense(), dtype=np.float64)
-
-            # Generate Predictions
-            prediction = rf_model.predict(X_dense)[0]
+            # Generate Predictions -- use the user-chosen threshold, not the
+            # model's built-in 0.5 cutoff (see slider help text / README for why)
             probability = rf_model.predict_proba(X_dense)[0][1]
+            prediction = 1 if probability >= threshold else 0
 
             # Display Results UI
-            st.subheader(f"Results for [{repo['full_name']}]({repo['html_url']})")
+            st.subheader(f"Results for [{features['full_name']}]({features['html_url']})")
 
             col1, col2, col3, col4 = st.columns(4)
-            col1.metric("⭐ Stars", repo.get("stargazers_count", 0))
-            col2.metric("🍴 Forks", repo.get("forks_count", 0))
-            col3.metric("🐛 Open Issues", repo.get("open_issues_count", 0))
+            col1.metric("⭐ Stars", features["stars"])
+            col2.metric("🍴 Forks", features["forks"])
+            col3.metric("🐛 Open Issues", features["open_issues"])
             col4.metric("📅 Age (Days)", repo_age_days)
 
             if topics:
