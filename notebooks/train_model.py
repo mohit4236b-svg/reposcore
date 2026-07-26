@@ -25,7 +25,9 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import (
     classification_report, confusion_matrix, roc_auc_score,
     make_scorer, f1_score, precision_score, recall_score,
+    brier_score_loss,
 )
+from sklearn.calibration import calibration_curve
 from scipy.sparse import hstack
 import joblib
 
@@ -107,6 +109,18 @@ print("Confusion matrix ([[TN, FP], [FN, TP]]):")
 print(cm)
 print(f"ROC-AUC: {auc:.3f}")
 
+# --- Calibration check: does a 70% confidence score actually mean ~70% correct? ---
+brier = brier_score_loss(y_test, y_proba_rf)
+frac_pos, mean_pred = calibration_curve(y_test, y_proba_rf, n_bins=5, strategy="quantile")
+calibration_bins = [
+    {"mean_predicted_confidence": float(p), "observed_fraction_positive": float(o)}
+    for p, o in zip(mean_pred, frac_pos)
+]
+print(f"\nBrier score (lower is better, 0=perfect, 0.25=random-guessing baseline): {brier:.3f}")
+print("Calibration bins (mean predicted confidence vs. observed fraction positive):")
+for b in calibration_bins:
+    print(f"  predicted={b['mean_predicted_confidence']:.2f}  observed={b['observed_fraction_positive']:.2f}")
+
 # Feature importance
 feature_names = (
     list(tfidf_readme.get_feature_names_out()) +
@@ -125,6 +139,8 @@ metrics_report = {
     "cv_5fold": cv_summary,
     "holdout_confusion_matrix": cm.tolist(),
     "holdout_roc_auc": float(auc),
+    "holdout_brier_score": float(brier),
+    "holdout_calibration_bins": calibration_bins,
     "n_rows": len(df),
     "positive_rate": float(y.mean()),
 }

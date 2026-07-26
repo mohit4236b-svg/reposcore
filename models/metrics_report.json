@@ -24,6 +24,29 @@
     ]
   ],
   "holdout_roc_auc": 0.935818875353759,
+  "holdout_brier_score": 0.11508372747747747,
+  "holdout_calibration_bins": [
+    {
+      "mean_predicted_confidence": 0.05101123595505616,
+      "observed_fraction_positive": 0.011235955056179775
+    },
+    {
+      "mean_predicted_confidence": 0.14567415730337085,
+      "observed_fraction_positive": 0.0
+    },
+    {
+      "mean_predicted_confidence": 0.24915730337078631,
+      "observed_fraction_positive": 0.11235955056179775
+    },
+    {
+      "mean_predicted_confidence": 0.38784090909090896,
+      "observed_fraction_positive": 0.5
+    },
+    {
+      "mean_predicted_confidence": 0.5982584269662923,
+      "observed_fraction_positive": 0.8314606741573034
+    }
+  ],
   "n_rows": 2218,
   "positive_rate": 0.29035166816952207
 }
