@@ -83,6 +83,7 @@ After removing badge markup, repo activity signals (`stars`, `days_since_last_co
 - **"Quality" is a proxy, not a ground truth.** Stars-per-month rewards popularity, which correlates with but doesn't equal code quality. A well-written internal tool with few stars would be scored "not quality" here.
 - **Badge stripping is regex-based, not exhaustive.** It targets shields.io, badge.fury.io, and similarly-structured badge hosts/markdown patterns; some CI-signal likely still leaks through badge formats the regex doesn't cover.
 - **No temporal validation.** The dataset is a single point-in-time snapshot; there's no check for how well the model generalizes to repos created after collection, or to topics outside the five collected here.
+- **Confidence score is under-calibrated at the high end.** Brier score is 0.115 (0=perfect, 0.25=random-guessing baseline), so it's meaningfully better than chance overall — but checking predicted-vs-observed in bins shows the model is somewhat *under*-confident on likely-quality repos (when it says ~60% confidence, the true rate in that bin is closer to 83%) and reasonably calibrated in the low range. Read the confidence score as directionally useful, not as a literal probability.
 
 ## Explainability
 
