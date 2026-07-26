@@ -22,22 +22,7 @@ df = pd.read_csv(r"C:\reposcore_data\repos_basic_batch2.csv")
 
 enriched = []
 
-for i, row in df.iterrows():
-    full_name = row["full_name"]
-    print(f"Processing {i+1}/{len(df)}: {full_name}")
-
-    repo_data = {"full_name": full_name}
-
-    try:
-        readme_resp = session.get(f"https://api.github.com/repos/{full_name}/readme", headers=headers, timeout=10)
-        repo_data["has_readme"] = readme_resp.status_code == 200
-        repo_data["readme_size"] = readme_resp.json().get("size", 0) if readme_resp.status_code == 200 else 0
-
-        ci_resp = session.get(f"https://api.github.com/repos/{full_name}/contents/.github/workflows", headers=headers, timeout=10)
-        repo_data["has_ci"] = ci_resp.status_code == 200
-
-        tests_resp = session.get(f"https://api.github.com/repos/{full_name}/contents/tests", headers=headers, timeout=10)
-        repo_data["has_tests"] = tests_resp.status_code == 200
+for i, row in df.iterrows()
 
     except requests.exceptions.RequestException as e:
         print(f"  Skipped {full_name}: {e}")
