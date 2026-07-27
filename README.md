@@ -1,5 +1,7 @@
 # ⭐ RepoScore: GitHub Repository Quality Predictor
 
+[![CI](https://github.com/mohit4236b-svg/reposcore/actions/workflows/ci.yml/badge.svg)](https://github.com/mohit4236b-svg/reposcore/actions/workflows/ci.yml)
+
 RepoScore predicts whether a GitHub repository is likely to be a "high-quality" project based on its metadata, README content, and topic tags. Enter any public GitHub repo and get an instant quality prediction, powered by a Random Forest classifier trained on ~2,200 real repositories.
 
 **Live demo:** [reposcoree.streamlit.app](https://reposcoree.streamlit.app/) — paste a repo (e.g. `scikit-learn/scikit-learn`) and get a prediction with confidence score and a feature-level explanation.
@@ -78,7 +80,17 @@ After removing badge markup, repo activity signals (`stars`, `days_since_last_co
 
 ## Known limitations
 
-- **Recall is the real weak point (0.46 CV, 0.50 held-out).** After removing the badge-leakage shortcut, the model misses roughly half of true "quality" repos — it's a real limitation, not just a hidden strength, since it means the current feature set isn't fully capturing what makes a repo "quality" by this definition.
+- **Recall at the default threshold (0.46 CV, 0.50 held-out) is genuinely low** — the model misses roughly half of true "quality" repos at the default 0.5 cutoff. This turned out to be a threshold choice, not a fixed ceiling: the default 0.5 isn't F1-optimal. 5-fold CV across thresholds:
+
+  | Threshold | Precision | Recall | F1 |
+  |---|---|---|---|
+  | 0.3 | 0.665 | 0.893 | **0.762** |
+  | 0.4 | 0.789 | 0.722 | 0.754 |
+  | 0.5 (default) | 0.894 | 0.474 | 0.619 |
+  | 0.6 | 0.983 | 0.267 | 0.420 |
+  | 0.7 | 1.000 | 0.121 | 0.216 |
+
+  F1 actually peaks around 0.3, not 0.5. Which threshold is "right" depends on the cost of a false negative vs. a false positive for your use case — there's a slider in the Streamlit app and a `--threshold` flag on the CLI to choose (see below) rather than a single hardcoded cutoff.
 - **Topic tags gave only a modest improvement** and didn't produce any single feature in the top 20 — likely because topic information overlaps with vocabulary already present in README text.
 - **"Quality" is a proxy, not a ground truth.** Stars-per-month rewards popularity, which correlates with but doesn't equal code quality. A well-written internal tool with few stars would be scored "not quality" here.
 - **Badge stripping is regex-based, not exhaustive.** It targets shields.io, badge.fury.io, and similarly-structured badge hosts/markdown patterns; some CI-signal likely still leaks through badge formats the regex doesn't cover.
@@ -94,8 +106,11 @@ The Streamlit app shows a per-prediction SHAP breakdown alongside the score — 
 ```
 reposcore/
 ├── app.py                          # Streamlit demo (predicts + explains with SHAP)
-├── reposcore_utils.py              # Shared preprocessing (badge stripping) used by
-│                                    #   both training and inference, so they can't drift apart
+├── reposcore_cli.py                # Non-interactive CLI: JSON output, scriptable, CI-usable
+├── reposcore_utils.py              # Shared fetch/featurize/predict logic used by BOTH
+│                                    #   app.py and reposcore_cli.py, and shared preprocessing
+│                                    #   (badge stripping) used by BOTH training and inference,
+│                                    #   so none of the three can silently drift apart
 ├── notebooks/
 │   ├── collect_repos.py            # Batch 1: search API collection
 │   ├── enrich_repos.py             # Batch 1: README/CI/tests check
@@ -107,7 +122,7 @@ reposcore/
 │   ├── build_dataset_v2.py         # Merge, clean, label
 │   └── train_model.py              # Train, CV-evaluate, save model + metrics report
 ├── tests/
-│   └── test_reposcore_utils.py     # Guards the badge-stripping fix against regressions
+│   └── test_reposcore_utils.py     # Guards the badge-stripping fix + CLI error handling
 ├── .github/workflows/ci.yml        # Runs tests on every push/PR
 ├── requirements.txt                # Runtime dependencies
 ├── requirements-dev.txt            # + pytest, for running the test suite
@@ -137,6 +152,21 @@ streamlit run app.py
 
 To retrain from scratch, run the scripts in `notebooks/` in order (collection → enrichment → README fetch → topics → dataset build → training).
 
+## CLI usage
+
+The Streamlit app is for interactive one-off lookups. `reposcore_cli.py` does the same scoring non-interactively, for scripting or CI:
+
+```bash
+python reposcore_cli.py scikit-learn/scikit-learn pallets/flask
+python reposcore_cli.py --file repos.txt --pretty
+python reposcore_cli.py owner/repo --format csv > scores.csv
+python reposcore_cli.py owner/repo --threshold 0.3   # F1-optimal threshold, see below
+```
+
+Outputs JSON (default) or CSV (`--format csv`) with `predicted_quality`, `confidence`, `threshold`, and the underlying signal values per repo, and exits non-zero if any repo failed to score. The classification threshold defaults to 0.5 but is adjustable with `--threshold` — see "Known limitations" below for why 0.5 isn't actually the best choice for every use case. The Streamlit app has the same option as a slider.
+
+Without `GITHUB_TOKEN` set, the GitHub API rate-limits at 60 requests/hour — for scoring more than a handful of repos, set the token in `.env` first (the same requirement [`ossf/criticality_score`](https://github.com/ossf/criticality_score), a similar tool from Google/OpenSSF, has for its own CLI).
+
 ## Running tests
 
 ```bash
@@ -144,4 +174,13 @@ pip install -r requirements-dev.txt
 pytest tests/ -v
 ```
 
-Tests run automatically on every push/PR via GitHub Actions (see `.github/workflows/ci.yml`). They currently cover the badge-stripping preprocessing step — the piece of logic that fixes the leakage bug described below — since a silent regression there would let the label-leakage signal back in without anyone noticing.
+Tests run automatically on every push/PR via GitHub Actions (see `.github/workflows/ci.yml`). They cover the badge-stripping preprocessing step (the fix for the leakage bug described above) and the CLI's error handling, since silent regressions in either would be easy to miss otherwise.
+
+## How this compares to similar tools
+
+Two existing projects are worth comparing against directly:
+
+- **[`ossf/criticality_score`](https://github.com/ossf/criticality_score)** (Google/OpenSSF) scores OSS project *criticality* — a related but different question ("how important/depended-upon is this project" rather than "is this well-built") — using a transparent weighted formula over signals like contributor count, commit frequency, and dependency usage, with per-signal weights and thresholds you can override via a config file. It publishes its scored dataset (CSV + BigQuery) for thousands of repos and ships as a Go CLI. RepoScore's equivalent of that transparency is the SHAP breakdown per prediction — but a formula's weights are inspectable *before* you run it, where SHAP only explains *after* a specific prediction. That's a real trade-off, not just a difference in maturity: the ML approach picks up README-text signal a fixed formula can't, at the cost of a global weighting scheme you can read in one glance.
+- **[`clayallsopp/readme-score`](https://github.com/clayallsopp/readme-score)** scores README complexity specifically (not the whole repo) with a small heuristic Ruby gem, packaged with a hosted web checker and an HTTP API, plus an example-scores table in its own README. RepoScore's README-only signal is currently folded into the same model as repo metadata rather than broken out as its own score — a possible future split.
+
+What RepoScore currently has that neither of those does: an ML model (vs. a fixed formula) with a documented, honestly-reported accuracy/recall trade-off and a caught-and-fixed leakage bug. What it's missing relative to both: a published dataset of scored repos, and (unlike `readme-score`) a hosted HTTP API beyond the Streamlit UI — `reposcore_cli.py` above is a step toward the former but not the latter.
