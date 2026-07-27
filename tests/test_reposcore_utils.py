@@ -48,3 +48,53 @@ def test_handles_non_string_input():
 
 def test_handles_empty_string():
     assert strip_badges("") == ""
+
+
+def test_cli_score_repo_handles_fetch_error(monkeypatch):
+    """score_repo() should surface a RepoFetchError as an {'error': ...} dict,
+    not raise -- this is what lets the CLI report failures per-repo in its
+    JSON array instead of crashing the whole batch."""
+    import reposcore_cli
+    from reposcore_utils import RepoFetchError
+
+    def fake_fetch(full_name, headers=None):
+        raise RepoFetchError("Repository 'nope/nope' not found.")
+
+    monkeypatch.setattr(reposcore_cli, "fetch_repo_features", fake_fetch)
+    result = reposcore_cli.score_repo("nope/nope", models=(None, None, None, None), headers={})
+    assert result == {"repo": "nope/nope", "error": "Repository 'nope/nope' not found."}
+
+
+def test_cli_score_repo_respects_threshold(monkeypatch):
+    """A probability of 0.4 should flip from 'low' to 'high' depending on
+    the --threshold value -- this is the whole point of exposing it."""
+    import reposcore_cli
+    import numpy as np
+
+    class FakeModel:
+        def predict_proba(self, X):
+            return np.array([[0.6, 0.4]])
+
+    monkeypatch.setattr(reposcore_cli, "fetch_repo_features",
+                         lambda full_name, headers=None: {
+                             "full_name": full_name, "html_url": "u", "topics": [],
+                             "stars": 1, "forks": 0, "open_issues": 0, "repo_age_days": 1,
+                         })
+    monkeypatch.setattr(reposcore_cli, "featurize", lambda *a, **k: None)
+
+    models = (FakeModel(), None, None, None)
+    low = reposcore_cli.score_repo("a/b", models, headers={}, threshold=0.5)
+    high = reposcore_cli.score_repo("a/b", models, headers={}, threshold=0.3)
+    assert low["predicted_quality"] == "low"
+    assert high["predicted_quality"] == "high"
+    assert low["confidence"] == 0.4
+
+
+def test_cli_csv_output_has_expected_header():
+    import reposcore_cli
+    results = [{"repo": "a/b", "url": "u", "predicted_quality": "high",
+                "confidence": 0.7, "threshold": 0.5, "stars": 5, "forks": 1,
+                "open_issues": 0, "repo_age_days": 10}]
+    out = reposcore_cli.to_csv(results)
+    assert out.splitlines()[0] == ",".join(reposcore_cli.CSV_FIELDS)
+    assert "a/b" in out
