@@ -13,6 +13,33 @@
       "std": 0.05657861017433231
     }
   },
+  "cv_threshold_sweep": {
+    "0.3": {
+      "precision": 0.665,
+      "recall": 0.893,
+      "f1": 0.762
+    },
+    "0.4": {
+      "precision": 0.789,
+      "recall": 0.722,
+      "f1": 0.754
+    },
+    "0.5": {
+      "precision": 0.894,
+      "recall": 0.474,
+      "f1": 0.619
+    },
+    "0.6": {
+      "precision": 0.983,
+      "recall": 0.267,
+      "f1": 0.42
+    },
+    "0.7": {
+      "precision": 1.0,
+      "recall": 0.121,
+      "f1": 0.216
+    }
+  },
   "holdout_confusion_matrix": [
     [
       306,
