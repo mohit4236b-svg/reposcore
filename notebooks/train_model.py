@@ -17,7 +17,7 @@ import json
 
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split, StratifiedKFold, cross_validate
+from sklearn.model_selection import train_test_split, StratifiedKFold, cross_validate, cross_val_predict
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
@@ -32,7 +32,7 @@ from scipy.sparse import hstack
 import joblib
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from reposcore_utils import strip_badges
+from reposcore_utils import strip_badges, STRUCTURED_COLS
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, "models")
@@ -44,9 +44,10 @@ df = pd.read_csv(DATA_PATH)
 df["readme_text"] = df["readme_text"].fillna("").apply(strip_badges)
 df["topics"] = df["topics"].fillna("")
 
-# Structured features -- excluding anything used to build the label
-structured_cols = ["stars", "forks", "open_issues", "readme_size",
-                    "repo_age_days", "days_since_last_commit"]
+# Structured features -- excluding anything used to build the label.
+# Single source of truth: reposcore_utils.STRUCTURED_COLS (also used by
+# app.py and reposcore_cli.py), so training and inference can't drift apart.
+structured_cols = STRUCTURED_COLS[:-1]  # everything except "has_readme", added separately below
 structured_features = df[structured_cols].fillna(0)
 
 df["has_readme"] = df["has_readme"].astype(int)
@@ -80,6 +81,20 @@ for metric in ["f1", "precision", "recall"]:
     vals = cv_scores[f"test_{metric}"]
     cv_summary[metric] = {"mean": float(vals.mean()), "std": float(vals.std())}
     print(f"{metric:>10}: {vals.mean():.3f} +/- {vals.std():.3f}")
+
+# --- Threshold sweep (CV-based): is the default 0.5 cutoff actually F1-optimal? ---
+cv_proba = cross_val_predict(rf_cv_model, X_scaled_for_cv, y, cv=cv, method="predict_proba")[:, 1]
+threshold_sweep = {}
+print("\n=== Threshold sweep (5-fold CV probabilities) ===")
+for t in [0.3, 0.4, 0.5, 0.6, 0.7]:
+    pred_t = (cv_proba >= t).astype(int)
+    threshold_sweep[str(t)] = {
+        "precision": round(float(precision_score(y, pred_t)), 3),
+        "recall": round(float(recall_score(y, pred_t)), 3),
+        "f1": round(float(f1_score(y, pred_t)), 3),
+    }
+    print(f"  t={t}: precision={threshold_sweep[str(t)]['precision']}  "
+          f"recall={threshold_sweep[str(t)]['recall']}  f1={threshold_sweep[str(t)]['f1']}")
 
 # --- Single held-out split, kept for the saved model + confusion matrix ---
 X_train, X_test, y_train, y_test = train_test_split(
@@ -137,6 +152,7 @@ importance_df.to_csv(os.path.join(DATA_DIR, "feature_importances.csv"), index=Fa
 # Save a metrics report alongside the model so results are reproducible/auditable
 metrics_report = {
     "cv_5fold": cv_summary,
+    "cv_threshold_sweep": threshold_sweep,
     "holdout_confusion_matrix": cm.tolist(),
     "holdout_roc_auc": float(auc),
     "holdout_brier_score": float(brier),
