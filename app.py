@@ -1,4 +1,4 @@
-import base64
+﻿import base64
 import os
 import pickle
 import joblib
@@ -17,7 +17,7 @@ load_dotenv()
 # Page configuration
 st.set_page_config(
     page_title="RepoScore",
-    page_icon="⭐",
+    page_icon="â­",
     layout="wide"
 )
 
@@ -27,7 +27,6 @@ headers = {"Accept": "application/vnd.github+json"}
 if token:
     headers["Authorization"] = f"Bearer {token}"
 
-
 def safe_load(file_path):
     """Attempt loading with joblib first; fall back to built-in pickle if joblib fails."""
     try:
@@ -35,7 +34,6 @@ def safe_load(file_path):
     except Exception:
         with open(file_path, "rb") as f:
             return pickle.load(f)
-
 
 @st.cache_resource
 def load_ml_assets():
@@ -54,18 +52,17 @@ def load_ml_assets():
         file_path = os.path.join(model_dir, filename)
 
         if not os.path.exists(file_path):
-            st.error(f"❌ Missing file: `{filename}` was not found in the `models/` directory.")
+            st.error(f"âŒ Missing file: `{filename}` was not found in the `models/` directory.")
             st.stop()
 
         try:
             loaded[key] = safe_load(file_path)
         except Exception as err:
-            st.error(f"❌ Failed loading `{filename}`:")
+            st.error(f"âŒ Failed loading `{filename}`:")
             st.exception(err)
             st.stop()
 
     return loaded["rf_model"], loaded["tfidf_readme"], loaded["tfidf_topics"], loaded["scaler"]
-
 
 @st.cache_resource
 def load_explainer(_model):
@@ -73,11 +70,23 @@ def load_explainer(_model):
     import shap
     return shap.TreeExplainer(_model)
 
+def check_exceptions(features):
+    """Check for data quality issues that might affect prediction reliability."""
+    exceptions = []
+    if features["has_readme"] == 0:
+        exceptions.append("⚠️ No README detected.")
+    elif features["readme_size"] < 50:
+        exceptions.append("⚠️ Very small README (less than 50 characters).")
+    if not features["topics"]:
+        exceptions.append("⚠️ No topics specified.")
+    if features["days_since_last_commit"] > 730:  # over 2 years
+        exceptions.append("⚠️ No commits in over 2 years.")
+    return exceptions
 
 rf_model, tfidf_readme, tfidf_topics, scaler = load_ml_assets()
 
 # Application Interface
-st.title("⭐ RepoScore: GitHub Repository Quality Predictor")
+st.title("â­ RepoScore: GitHub Repository Quality Predictor")
 st.caption("Analyze a public GitHub repository to predict its overall quality score.")
 
 repo_input = st.text_input("Enter Repository (owner/name):", placeholder="scikit-learn/scikit-learn")
@@ -106,26 +115,38 @@ if st.button("Predict Quality", type="primary") and repo_input:
             probability = rf_model.predict_proba(X_dense)[0][1]
             prediction = 1 if probability >= threshold else 0
 
+            # Check for exceptions and low confidence
+            exceptions = check_exceptions(features)
+            low_confidence = 0.4 <= probability <= 0.6  # Model uncertainty band
+            warning_messages = exceptions.copy()
+            if low_confidence:
+                warning_messages.append("⚠️ Low confidence prediction (probability near 0.5).")
             # Display Results UI
             st.subheader(f"Results for [{features['full_name']}]({features['html_url']})")
 
             col1, col2, col3, col4 = st.columns(4)
-            col1.metric("⭐ Stars", features["stars"])
-            col2.metric("🍴 Forks", features["forks"])
-            col3.metric("🐛 Open Issues", features["open_issues"])
-            col4.metric("📅 Age (Days)", repo_age_days)
+            col1.metric("â­ Stars", features["stars"])
+            col2.metric("ðŸ´ Forks", features["forks"])
+            col3.metric("ðŸ› Open Issues", features["open_issues"])
+            col4.metric("ðŸ“… Age (Days)", repo_age_days)
 
             if topics:
                 st.write("**Topics:** " + ", ".join([f"`{t}`" for t in topics]))
 
             st.divider()
 
+            # Display warnings if any
+            if warning_messages:
+                st.warning(" \\n".join(warning_messages))
+
+            st.divider()
+
             res_col1, res_col2 = st.columns([2, 1])
             with res_col1:
                 if prediction == 1:
-                    st.success("### 🟢 Predicted: High Quality Repository")
+                    st.success("### ðŸŸ¢ Predicted: High Quality Repository")
                 else:
-                    st.warning("### 🔴 Predicted: Low Quality / Unmaintained Repository")
+                    st.warning("### ðŸ”´ Predicted: Low Quality / Unmaintained Repository")
 
             with res_col2:
                 st.metric("Model Confidence", f"{probability:.1%}")
