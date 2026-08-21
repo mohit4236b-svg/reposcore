@@ -17,7 +17,7 @@ load_dotenv()
 # Page configuration
 st.set_page_config(
     page_title="RepoScore",
-    page_icon="â­",
+    page_icon="⭐",
     layout="wide"
 )
 
@@ -83,6 +83,81 @@ def check_exceptions(features):
         exceptions.append("⚠️ No commits in over 2 years.")
     return exceptions
 
+
+def log_audit_trail(features, probability, prediction, threshold):
+    """
+    Log scoring decision to CSV file for audit trail.
+    Records: repo identifier, input features used, score, timestamp.
+    """
+    import csv
+    import os
+    from datetime import datetime
+    
+    # Create audit trail directory if it doesn't exist
+    audit_dir = "audit_trail"
+    if not os.path.exists(audit_dir):
+        os.makedirs(audit_dir)
+    
+    # CSV file path
+    csv_file = os.path.join(audit_dir, "scoring_decisions.csv")
+    
+    # Prepare data to log
+    timestamp = datetime.now().isoformat()
+    repo_id = features.get("full_name", "unknown")
+    
+    # Extract features for logging (we'll log the key features used in scoring)
+    logged_features = {
+        "full_name": features.get("full_name", ""),
+        "html_url": features.get("html_url", ""),
+        "stars": features.get("stars", 0),
+        "forks": features.get("forks", 0),
+        "open_issues": features.get("open_issues", 0),
+        "readme_size": features.get("readme_size", 0),
+        "repo_age_days": features.get("repo_age_days", 0),
+        "days_since_last_commit": features.get("days_since_last_commit", 0),
+        "has_readme": features.get("has_readme", 0),
+        "topics_count": len(features.get("topics", [])),
+        "probability": f"{probability:.6f}",
+        "prediction": prediction,  # 1 for high quality, 0 for low quality
+        "threshold": f"{threshold:.2f}",
+        "timestamp": timestamp
+    }
+    
+    # Define CSV headers
+    fieldnames = [
+        "timestamp", "repo_id", "repo_url", "stars", "forks", "open_issues",
+        "readme_size", "repo_age_days", "days_since_last_commit", "has_readme",
+        "topics_count", "probability", "prediction", "threshold"
+    ]
+    
+    # Write to CSV (create file with headers if it doesn't exist)
+    file_exists = os.path.isfile(csv_file)
+    with open(csv_file, 'a', newline='', encoding='utf-8') as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        
+        # Write header if file is new
+        if not file_exists:
+            writer.writeheader()
+        
+        # Write the data row
+        writer.writerow({
+            "timestamp": timestamp,
+            "repo_id": repo_id,
+            "repo_url": logged_features["html_url"],
+            "stars": logged_features["stars"],
+            "forks": logged_features["forks"],
+            "open_issues": logged_features["open_issues"],
+            "readme_size": logged_features["readme_size"],
+            "repo_age_days": logged_features["repo_age_days"],
+            "days_since_last_commit": logged_features["days_since_last_commit"],
+            "has_readme": logged_features["has_readme"],
+            "topics_count": logged_features["topics_count"],
+            "probability": logged_features["probability"],
+            "prediction": logged_features["prediction"],
+            "threshold": logged_features["threshold"]
+        })
+
+
 rf_model, tfidf_readme, tfidf_topics, scaler = load_ml_assets()
 
 # Application Interface
@@ -115,6 +190,9 @@ if st.button("Predict Quality", type="primary") and repo_input:
             probability = rf_model.predict_proba(X_dense)[0][1]
             prediction = 1 if probability >= threshold else 0
 
+
+            # Log to audit trail
+            log_audit_trail(features, probability, prediction, threshold)
             # Check for exceptions and low confidence
             exceptions = check_exceptions(features)
             low_confidence = 0.4 <= probability <= 0.6  # Model uncertainty band
@@ -189,3 +267,6 @@ if st.button("Predict Quality", type="primary") and repo_input:
                         st.write(f"- `{row['feature']}` ({row['shap_value']:.3f})")
             except Exception as err:
                 st.caption(f"Explanation unavailable: {err}")
+
+
+
