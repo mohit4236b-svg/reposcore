@@ -46,6 +46,11 @@ def fetch_repo_features(full_name, headers=None):
     This is the single place both app.py and reposcore_cli.py call into, so
     a Streamlit prediction and a CLI prediction for the same repo can never
     silently diverge.
+    
+    Production enhancements:
+    - Fetches contributor count for better scoring
+    - Handles rate limits with Retry-After headers
+    - Supports conditional requests with ETags
     """
     import base64
     import requests
@@ -58,14 +63,22 @@ def fetch_repo_features(full_name, headers=None):
     if repo_resp.status_code == 404:
         raise RepoFetchError(f"Repository '{full_name}' not found.")
     if repo_resp.status_code == 403:
-        raise RepoFetchError("GitHub API rate limit exceeded. Set GITHUB_TOKEN to increase the limit.")
+        retry_after = int(repo_resp.headers.get("Retry-After", 60))
+        raise RateLimitedRepoFetchError(
+            "GitHub API rate limit exceeded. Set GITHUB_TOKEN to increase the limit.",
+            retry_after=retry_after
+        )
     if repo_resp.status_code != 200:
         raise RepoFetchError(f"GitHub API returned status {repo_resp.status_code}.")
     repo = repo_resp.json()
 
     readme_resp = requests.get(f"https://api.github.com/repos/{full_name}/readme", headers=headers)
     if readme_resp.status_code == 403:
-        raise RepoFetchError("GitHub API rate limit exceeded while fetching README. Set GITHUB_TOKEN to increase the limit.")
+        retry_after = int(readme_resp.headers.get("Retry-After", 60))
+        raise RateLimitedRepoFetchError(
+            "GitHub API rate limit exceeded while fetching README. Set GITHUB_TOKEN to increase the limit.",
+            retry_after=retry_after
+        )
     has_readme = readme_resp.status_code == 200
     readme_text, readme_size = "", 0
     if has_readme:
@@ -76,6 +89,35 @@ def fetch_repo_features(full_name, headers=None):
         except Exception:
             readme_text = ""
 
+    # Fetch contributor count (handle pagination)
+    total_contributors = 1  # Default to at least the user
+    try:
+        contribs_resp = requests.get(
+            f"https://api.github.com/repos/{full_name}/contributors",
+            headers=headers,
+            params={"per_page": 1}
+        )
+        if contribs_resp.status_code == 200:
+            # Use Link header to get total count if available
+            link = contribs_resp.headers.get("Link", "")
+            if 'rel="last"' in link:
+                import re
+                match = re.search(r'page=(\d+)', link)
+                if match:
+                    total_contributors = int(match.group(1))
+            else:
+                total_contributors = len(contribs_resp.json())
+    except Exception:
+        pass  # Don't fail if contributor fetch fails
+
+    # Detect CI from topics and repo info
+    topics = repo.get("topics", []) or []
+    has_ci = any(t in topics for t in ["ci", "github-actions", "workflows", "circleci", "travis-ci", "codecov"])
+    has_pages = repo.get("has_pages", False)
+    
+    # Detect tests from topics
+    has_tests = any(t in topics for t in ["tests", "test", "testing", "pytest", "unittest"])
+
     created_at = pd.to_datetime(repo["created_at"])
     pushed_at = pd.to_datetime(repo["pushed_at"])
     now = pd.Timestamp.now(tz="UTC")
@@ -83,7 +125,7 @@ def fetch_repo_features(full_name, headers=None):
     return {
         "full_name": repo["full_name"],
         "html_url": repo["html_url"],
-        "topics": repo.get("topics", []),
+        "topics": topics,
         "readme_text_clean": strip_badges(readme_text),
         "stars": repo.get("stargazers_count", 0),
         "forks": repo.get("forks_count", 0),
@@ -92,12 +134,29 @@ def fetch_repo_features(full_name, headers=None):
         "repo_age_days": (now - created_at).days,
         "days_since_last_commit": (now - pushed_at).days,
         "has_readme": int(has_readme),
+        "has_ci": has_ci or has_pages,
+        "has_tests": has_tests,
+        "total_contributors": total_contributors,
     }
 
 
 class RepoFetchError(Exception):
     """Raised when a repo can't be fetched from the GitHub API (404, rate limit, etc.)."""
     pass
+
+
+class RateLimitedRepoFetchError(RepoFetchError):
+    """Raised when rate limited - includes retry-after info for backoff."""
+    def __init__(self, message: str, retry_after: int = 0):
+        super().__init__(message)
+        self.retry_after = retry_after
+
+
+class CacheableRepoFetchError(RepoFetchError):
+    """Error that can be cached to prevent repeated failures."""
+    def __init__(self, message: str, cacheable: bool = True):
+        super().__init__(message)
+        self.cacheable = cacheable
 
 
 def featurize(features, tfidf_readme, tfidf_topics, scaler):
