@@ -120,6 +120,10 @@ After removing badge markup, repo activity signals (`stars`, `days_since_last_co
 - **No temporal validation.** The dataset is a single point-in-time snapshot; there's no check for how well the model generalizes to repos created after collection, or to topics outside the five collected here.
 - **Confidence score is under-calibrated at the high end.** Brier score is 0.115 (0=perfect, 0.25=random-guessing baseline), so it's meaningfully better than chance overall — but checking predicted-vs-observed in bins shows the model is somewhat *under*-confident on likely-quality repos (when it says ~60% confidence, the true rate in that bin is closer to 83%) and reasonably calibrated in the low range. Read the confidence score as directionally useful, not as a literal probability.
 
+## What this would need to become production-grade
+
+Temporal validation would be needed to ensure the model generalizes to repos created after 2022, since ML models degrade as platform conventions evolve. A larger, regularly-refreshed dataset covering more topics (beyond the five collected) would improve topic coverage and reduce overfitting to specific domains. The model should be monitored for prediction drift—features like README structure and topic tags change over time, and a rising Brier score or shifting calibration curve would signal when retraining is needed. Finally, a small set of human-labeled quality assessments would provide an independent check against the current proxy label (stars per month + CI/tests), helping validate whether the model's notion of "quality" aligns with actual human judgment.
+
   ![Calibration reliability diagram](models/calibration_curve.png)
   *Reliability diagram: predicted probability bins vs. observed fraction positive. The gap between the diagonal (perfect calibration) and the blue points shows where the model is under- or over-confident.*
 
