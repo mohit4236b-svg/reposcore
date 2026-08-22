@@ -225,6 +225,22 @@ if st.button("Predict Quality", type="primary") and repo_input:
             if warning_messages:
                 st.warning("\n\n".join(warning_messages))
 
+            # --- Razorpay batch demo ---
+            with st.expander("See how Razorpay's own repos score"):
+                st.info("Batch scoring of Razorpay's public repos at threshold 0.3 (F1-optimal)")
+                import subprocess
+                try:
+                    result = subprocess.run(
+                        ["python", "reposcore_cli.py", "--file", "razorpay_repos.txt", "--format", "csv", "--threshold", "0.3"],
+                        capture_output=True, text=True, timeout=60
+                    )
+                    if "error" not in result.stdout.lower() or result.returncode == 0:
+                        st.dataframe(pd.read_csv(io.StringIO(result.stdout)))
+                    else:
+                        st.caption(f"Batch results: {result.stderr[:200] if result.stderr else 'No data'}")
+                except Exception as e:
+                    st.caption(f"Batch demo unavailable: {e}")
+
             st.divider()
 
             res_col1, res_col2 = st.columns([2, 1])
