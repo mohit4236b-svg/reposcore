@@ -288,12 +288,13 @@ if st.button("Predict Quality", type="primary") and repo_input:
                       st.write("Pushed toward 'high quality':")
                       for _, row in top_pos.iterrows():
                           st.write(f"- {row['feature']} (+{row['shap_value']:.3f})")
-                  with feat_col2:
-                      st.write("Pushed toward 'low quality':")
+                      with feat_col2:
+                          st.write("Pushed toward 'low quality':")
                       for _, row in top_neg.iterrows():
                           st.write(f"- {row['feature']} ({row['shap_value']:.3f})")
               except Exception as err:
                   st.caption(f"Explanation unavailable: {err}")
+rf_model, tfidf_readme, tfidf_topics, scaler = load_ml_assets()
 
 st.title("⭐ RepoScore: GitHub Repository Quality Predictor")
 st.caption("Analyze a public GitHub repository to predict its overall quality score.")
@@ -363,10 +364,10 @@ if st.button("Predict Quality", type="primary") and repo_input:
             with res_col2:
                 st.metric("Model Confidence", f"{probability:.1%}")
 
-            # --- Explainability: why did the model say this? ---
-            st.divider()
-            st.subheader("Why this prediction?")
-            try:
+                          # --- Explainability: why did the model say this? ---
+              st.divider()
+              st.subheader("Why this prediction?")
+              try:
                   explainer = load_explainer(rf_model)
                   shap_values = explainer.shap_values(X_dense, check_additivity=False)
 
@@ -428,4 +429,9 @@ if st.button("Predict Quality", type="primary") and repo_input:
                   st.caption(f"Explanation unavailable: {err}"
 
 
+
+
+
+st.caption(f"Explanation unavailable: {err}")
+rf_model, tfidf_readme, tfidf_topics, scaler = load_ml_assets()
 
