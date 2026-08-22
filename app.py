@@ -6,23 +6,7 @@
 
 
 
-
-
-
-
-
-
-
-
 import os
-
-
-
-
-
-
-
-
 
 
 
@@ -38,23 +22,7 @@ import pickle
 
 
 
-
-
-
-
-
-
-
-
 import joblib
-
-
-
-
-
-
-
-
 
 
 
@@ -70,23 +38,7 @@ import numpy as np
 
 
 
-
-
-
-
-
-
-
-
 import pandas as pd
-
-
-
-
-
-
-
-
 
 
 
@@ -102,23 +54,7 @@ import requests
 
 
 
-
-
-
-
-
-
-
-
 import streamlit as st
-
-
-
-
-
-
-
-
 
 
 
@@ -134,31 +70,7 @@ from dotenv import load_dotenv
 
 
 
-
-
-
-
-
-
-
-
 from scipy.sparse import hstack
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -190,31 +102,7 @@ from reposcore_utils import strip_badges, fetch_repo_features, featurize, RepoFe
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # Load environment variables
-
-
-
-
-
-
-
-
 
 
 
@@ -238,31 +126,7 @@ load_dotenv()
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # Page configuration
-
-
-
-
-
-
-
-
 
 
 
@@ -278,23 +142,7 @@ st.set_page_config(
 
 
 
-
-
-
-
-
-
-
-
     page_title="RepoScore",
-
-
-
-
-
-
-
-
 
 
 
@@ -310,23 +158,7 @@ st.set_page_config(
 
 
 
-
-
-
-
-
-
-
-
     layout="wide"
-
-
-
-
-
-
-
-
 
 
 
@@ -350,31 +182,7 @@ st.set_page_config(
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # Configure GitHub API Headers safely
-
-
-
-
-
-
-
-
 
 
 
@@ -390,14 +198,6 @@ token = os.getenv("GITHUB_TOKEN")
 
 
 
-
-
-
-
-
-
-
-
 headers = {"Accept": "application/vnd.github+json"}
 
 
@@ -406,23 +206,7 @@ headers = {"Accept": "application/vnd.github+json"}
 
 
 
-
-
-
-
-
-
-
-
 if token:
-
-
-
-
-
-
-
-
 
 
 
@@ -446,31 +230,7 @@ if token:
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def safe_load(file_path):
-
-
-
-
-
-
-
-
 
 
 
@@ -486,23 +246,7 @@ def safe_load(file_path):
 
 
 
-
-
-
-
-
-
-
-
     try:
-
-
-
-
-
-
-
-
 
 
 
@@ -518,14 +262,6 @@ def safe_load(file_path):
 
 
 
-
-
-
-
-
-
-
-
     except Exception:
 
 
@@ -534,23 +270,7 @@ def safe_load(file_path):
 
 
 
-
-
-
-
-
-
-
-
         with open(file_path, "rb") as f:
-
-
-
-
-
-
-
-
 
 
 
@@ -574,31 +294,7 @@ def safe_load(file_path):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 @st.cache_resource
-
-
-
-
-
-
-
-
 
 
 
@@ -614,23 +310,7 @@ def load_ml_assets():
 
 
 
-
-
-
-
-
-
-
-
     base_dir = os.path.dirname(os.path.abspath(__file__))
-
-
-
-
-
-
-
-
 
 
 
@@ -654,31 +334,7 @@ def load_ml_assets():
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     files = {
-
-
-
-
-
-
-
-
 
 
 
@@ -694,23 +350,7 @@ def load_ml_assets():
 
 
 
-
-
-
-
-
-
-
-
         "tfidf_readme": "tfidf_readme.pkl",
-
-
-
-
-
-
-
-
 
 
 
@@ -726,23 +366,7 @@ def load_ml_assets():
 
 
 
-
-
-
-
-
-
-
-
         "scaler": "scaler.pkl"
-
-
-
-
-
-
-
-
 
 
 
@@ -766,22 +390,6 @@ def load_ml_assets():
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     loaded = {}
 
 
@@ -790,23 +398,7 @@ def load_ml_assets():
 
 
 
-
-
-
-
-
-
-
-
     for key, filename in files.items():
-
-
-
-
-
-
-
-
 
 
 
@@ -830,31 +422,7 @@ def load_ml_assets():
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         if not os.path.exists(file_path):
-
-
-
-
-
-
-
-
 
 
 
@@ -870,31 +438,7 @@ def load_ml_assets():
 
 
 
-
-
-
-
-
-
-
-
             st.stop()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -918,23 +462,7 @@ def load_ml_assets():
 
 
 
-
-
-
-
-
-
-
-
             loaded[key] = safe_load(file_path)
-
-
-
-
-
-
-
-
 
 
 
@@ -950,23 +478,7 @@ def load_ml_assets():
 
 
 
-
-
-
-
-
-
-
-
             st.error(f"âŒ Failed loading `{filename}`:")
-
-
-
-
-
-
-
-
 
 
 
@@ -982,31 +494,7 @@ def load_ml_assets():
 
 
 
-
-
-
-
-
-
-
-
             st.stop()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1038,31 +526,7 @@ def load_ml_assets():
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 @st.cache_resource
-
-
-
-
-
-
-
-
 
 
 
@@ -1078,14 +542,6 @@ def load_explainer(_model):
 
 
 
-
-
-
-
-
-
-
-
     """Build a SHAP TreeExplainer once and cache it (RF trees make this fast)."""
 
 
@@ -1094,23 +550,7 @@ def load_explainer(_model):
 
 
 
-
-
-
-
-
-
-
-
     import shap
-
-
-
-
-
-
-
-
 
 
 
@@ -1134,31 +574,7 @@ def load_explainer(_model):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def check_exceptions(features):
-
-
-
-
-
-
-
-
 
 
 
@@ -1174,23 +590,7 @@ def check_exceptions(features):
 
 
 
-
-
-
-
-
-
-
-
     exceptions = []
-
-
-
-
-
-
-
-
 
 
 
@@ -1206,23 +606,7 @@ def check_exceptions(features):
 
 
 
-
-
-
-
-
-
-
-
         exceptions.append("⚠️ No README detected.")
-
-
-
-
-
-
-
-
 
 
 
@@ -1238,23 +622,7 @@ def check_exceptions(features):
 
 
 
-
-
-
-
-
-
-
-
         exceptions.append("⚠️ Very small README (less than 50 characters).")
-
-
-
-
-
-
-
-
 
 
 
@@ -1270,23 +638,7 @@ def check_exceptions(features):
 
 
 
-
-
-
-
-
-
-
-
         exceptions.append("⚠️ No topics specified.")
-
-
-
-
-
-
-
-
 
 
 
@@ -1302,23 +654,7 @@ def check_exceptions(features):
 
 
 
-
-
-
-
-
-
-
-
         exceptions.append("⚠️ No commits in over 2 years.")
-
-
-
-
-
-
-
-
 
 
 
@@ -1350,30 +686,6 @@ def check_exceptions(features):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def log_audit_trail(features, probability, prediction, threshold):
 
 
@@ -1382,23 +694,7 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
     """
-
-
-
-
-
-
-
-
 
 
 
@@ -1414,23 +710,7 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
     Records: repo identifier, input features used, score, timestamp.
-
-
-
-
-
-
-
-
 
 
 
@@ -1446,23 +726,7 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
     import csv
-
-
-
-
-
-
-
-
 
 
 
@@ -1478,14 +742,6 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
     from datetime import datetime
 
 
@@ -1494,23 +750,7 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
     
-
-
-
-
-
-
-
-
 
 
 
@@ -1526,23 +766,7 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
     audit_dir = "audit_trail"
-
-
-
-
-
-
-
-
 
 
 
@@ -1558,14 +782,6 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
         os.makedirs(audit_dir)
 
 
@@ -1574,23 +790,7 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
     
-
-
-
-
-
-
-
-
 
 
 
@@ -1606,14 +806,6 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
     csv_file = os.path.join(audit_dir, "scoring_decisions.csv")
 
 
@@ -1622,23 +814,7 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
     
-
-
-
-
-
-
-
-
 
 
 
@@ -1654,23 +830,7 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
     timestamp = datetime.now().isoformat()
-
-
-
-
-
-
-
-
 
 
 
@@ -1686,23 +846,7 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
     
-
-
-
-
-
-
-
-
 
 
 
@@ -1718,23 +862,7 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
     logged_features = {
-
-
-
-
-
-
-
-
 
 
 
@@ -1750,23 +878,7 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
         "html_url": features.get("html_url", ""),
-
-
-
-
-
-
-
-
 
 
 
@@ -1782,23 +894,7 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
         "forks": features.get("forks", 0),
-
-
-
-
-
-
-
-
 
 
 
@@ -1814,23 +910,7 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
         "readme_size": features.get("readme_size", 0),
-
-
-
-
-
-
-
-
 
 
 
@@ -1846,23 +926,7 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
         "days_since_last_commit": features.get("days_since_last_commit", 0),
-
-
-
-
-
-
-
-
 
 
 
@@ -1878,23 +942,7 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
         "topics_count": len(features.get("topics", [])),
-
-
-
-
-
-
-
-
 
 
 
@@ -1910,23 +958,7 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
         "prediction": prediction,  # 1 for high quality, 0 for low quality
-
-
-
-
-
-
-
-
 
 
 
@@ -1942,23 +974,7 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
         "timestamp": timestamp
-
-
-
-
-
-
-
-
 
 
 
@@ -1974,23 +990,7 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
     
-
-
-
-
-
-
-
-
 
 
 
@@ -2006,23 +1006,7 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
     fieldnames = [
-
-
-
-
-
-
-
-
 
 
 
@@ -2038,23 +1022,7 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
         "readme_size", "repo_age_days", "days_since_last_commit", "has_readme",
-
-
-
-
-
-
-
-
 
 
 
@@ -2070,55 +1038,23 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
     ]
-        
-        
-        
+
+
+
+
+
+
+
     
-        
-        
-        
-    
-        
-        
-        
-    
-        
-        
-        
-    
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+
+
+
+
+
 
 
     # Write to CSV (create file with headers if it doesn't exist)
-
-
-
-
-
-
-
-
 
 
 
@@ -2134,23 +1070,7 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
     with open(csv_file, 'a', newline='', encoding='utf-8') as f:
-
-
-
-
-
-
-
-
 
 
 
@@ -2166,23 +1086,7 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
         
-
-
-
-
-
-
-
-
 
 
 
@@ -2198,23 +1102,7 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
         if not file_exists:
-
-
-
-
-
-
-
-
 
 
 
@@ -2230,23 +1118,7 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
         
-
-
-
-
-
-
-
-
 
 
 
@@ -2262,23 +1134,7 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
         writer.writerow({
-
-
-
-
-
-
-
-
 
 
 
@@ -2294,23 +1150,7 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
             "repo_id": repo_id,
-
-
-
-
-
-
-
-
 
 
 
@@ -2326,23 +1166,7 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
             "stars": logged_features["stars"],
-
-
-
-
-
-
-
-
 
 
 
@@ -2358,23 +1182,7 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
             "open_issues": logged_features["open_issues"],
-
-
-
-
-
-
-
-
 
 
 
@@ -2390,23 +1198,7 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
             "repo_age_days": logged_features["repo_age_days"],
-
-
-
-
-
-
-
-
 
 
 
@@ -2422,23 +1214,7 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
             "has_readme": logged_features["has_readme"],
-
-
-
-
-
-
-
-
 
 
 
@@ -2454,23 +1230,7 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
             "probability": logged_features["probability"],
-
-
-
-
-
-
-
-
 
 
 
@@ -2486,14 +1246,6 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
             "threshold": logged_features["threshold"]
 
 
@@ -2502,39 +1254,7 @@ def log_audit_trail(features, probability, prediction, threshold):
 
 
 
-
-
-
-
-
-
-
-
         })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2574,22 +1294,6 @@ rf_model, tfidf_readme, tfidf_topics, scaler = load_ml_assets()
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # Application Interface
 
 
@@ -2598,23 +1302,7 @@ rf_model, tfidf_readme, tfidf_topics, scaler = load_ml_assets()
 
 
 
-
-
-
-
-
-
-
-
 st.title("⭐ RepoScore: GitHub Repository Quality Predictor")
-
-
-
-
-
-
-
-
 
 
 
@@ -2638,31 +1326,7 @@ st.caption("Analyze a public GitHub repository to predict its overall quality sc
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 repo_input = st.text_input("Enter Repository (owner/name):", placeholder="scikit-learn/scikit-learn")
-
-
-
-
-
-
-
-
 
 
 
@@ -2678,23 +1342,7 @@ threshold = st.slider(
 
 
 
-
-
-
-
-
-
-
-
     "Quality threshold", min_value=0.1, max_value=0.9, value=0.5, step=0.05,
-
-
-
-
-
-
-
-
 
 
 
@@ -2710,23 +1358,7 @@ threshold = st.slider(
 
 
 
-
-
-
-
-
-
-
-
          "but calls more low-quality ones 'high' too). Higher = higher precision, more false "
-
-
-
-
-
-
-
-
 
 
 
@@ -2742,23 +1374,7 @@ threshold = st.slider(
 
 
 
-
-
-
-
-
-
-
-
          "0.5 (precision 0.89/recall 0.47). See README for the full table."
-
-
-
-
-
-
-
-
 
 
 
@@ -2782,31 +1398,7 @@ threshold = st.slider(
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 if st.button("Predict Quality", type="primary") and repo_input:
-
-
-
-
-
-
-
-
 
 
 
@@ -2822,23 +1414,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
 
 
-
-
-
-
-
-
-
-
         try:
-
-
-
-
-
-
-
-
 
 
 
@@ -2854,23 +1430,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
 
 
-
-
-
-
-
-
-
-
         except RepoFetchError as e:
-
-
-
-
-
-
-
-
 
 
 
@@ -2886,23 +1446,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
 
 
-
-
-
-
-
-
-
-
         else:
-
-
-
-
-
-
-
-
 
 
 
@@ -2918,31 +1462,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
 
 
-
-
-
-
-
-
-
-
             repo_age_days = features["repo_age_days"]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2974,31 +1494,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
             # Generate Predictions -- use the user-chosen threshold, not the
-
-
-
-
-
-
-
-
 
 
 
@@ -3014,23 +1510,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
 
 
-
-
-
-
-
-
-
-
             probability = rf_model.predict_proba(X_dense)[0][1]
-
-
-
-
-
-
-
-
 
 
 
@@ -3062,39 +1542,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
             # Log to audit trail
-
-
-
-
-
-
-
-
 
 
 
@@ -3110,23 +1558,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
 
 
-
-
-
-
-
-
-
-
             # Check for exceptions and low confidence
-
-
-
-
-
-
-
-
 
 
 
@@ -3142,23 +1574,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
 
 
-
-
-
-
-
-
-
-
             low_confidence = 0.4 <= probability <= 0.6  # Model uncertainty band
-
-
-
-
-
-
-
-
 
 
 
@@ -3174,23 +1590,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
 
 
-
-
-
-
-
-
-
-
             if low_confidence:
-
-
-
-
-
-
-
-
 
 
 
@@ -3206,23 +1606,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
 
 
-
-
-
-
-
-
-
-
             # Display Results UI
-
-
-
-
-
-
-
-
 
 
 
@@ -3246,31 +1630,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
             col1, col2, col3, col4 = st.columns(4)
-
-
-
-
-
-
-
-
 
 
 
@@ -3286,14 +1646,6 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
 
 
-
-
-
-
-
-
-
-
             col2.metric("ðŸ´ Forks", features["forks"])
 
 
@@ -3302,23 +1654,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
 
 
-
-
-
-
-
-
-
-
             col3.metric("ðŸ› Open Issues", features["open_issues"])
-
-
-
-
-
-
-
-
 
 
 
@@ -3342,31 +1678,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
             if topics:
-
-
-
-
-
-
-
-
 
 
 
@@ -3390,39 +1702,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
             st.divider()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3446,14 +1726,6 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
 
 
-
-
-
-
-
-
-
-
             if warning_messages:
 
 
@@ -3462,31 +1734,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
 
 
-
-
-
-
-
-
-
-
                 st.warning(" \\n".join(warning_messages))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3518,31 +1766,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
             res_col1, res_col2 = st.columns([2, 1])
-
-
-
-
-
-
-
-
 
 
 
@@ -3558,23 +1782,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
 
 
-
-
-
-
-
-
-
-
                 if prediction == 1:
-
-
-
-
-
-
-
-
 
 
 
@@ -3590,14 +1798,6 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
 
 
-
-
-
-
-
-
-
-
                 else:
 
 
@@ -3606,31 +1806,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
 
 
-
-
-
-
-
-
-
-
                     st.warning("### ðŸ”´ Predicted: Low Quality / Unmaintained Repository")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3662,6 +1838,1070 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
 
 
+              with res_col2:
+
+
+
+
+
+
+
+                  st.metric("Model Confidence", f"{probability:.1%}")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+              # --- Explainability: why did the model say this? ---
+
+
+
+
+
+
+
+              st.divider()
+
+
+
+
+
+
+
+              st.subheader("Why this prediction?")
+
+
+
+
+
+
+
+              try:
+
+
+
+
+
+
+
+                  explainer = load_explainer(rf_model)
+
+
+
+
+
+
+
+                  shap_values = explainer.shap_values(X_dense, check_additivity=False)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                  # Newer shap versions return one ndarray shaped
+
+
+
+
+
+
+
+                  # (n_samples, n_features, n_classes); older versions return a
+
+
+
+
+
+
+
+                  # list of one array per class. Handle both, taking class 1.
+
+
+
+
+
+
+
+                  if isinstance(shap_values, list):
+
+
+
+
+
+
+
+                      sv = shap_values[1][0]
+
+
+
+
+
+
+
+                  elif np.ndim(shap_values) == 3:
+
+
+
+
+
+
+
+                      sv = shap_values[0, :, 1]
+
+
+
+
+
+
+
+                  else:
+
+
+
+
+
+
+
+                      sv = shap_values[0]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                  feature_names = (
+
+
+
+
+
+
+
+                      list(tfidf_readme.get_feature_names_out()) +
+
+
+
+
+
+
+
+                      list(tfidf_topics.get_feature_names_out()) +
+
+
+
+
+
+
+
+                      STRUCTURED_COLS
+
+
+
+
+
+
+
+                  )
+
+
+
+
+
+
+
+                  contrib = pd.DataFrame({"feature": feature_names, "shap_value": sv})
+
+
+
+
+
+
+
+                  contrib = contrib[contrib["shap_value"] != 0]
+
+
+
+
+
+
+
+                  top_pos = contrib.sort_values("shap_value", ascending=False).head(6)
+
+
+
+
+
+
+
+                  top_neg = contrib.sort_values("shap_value", ascending=True).head(6)
+
+
+
+
+
+
+
+                  
+
+
+
+
+
+
+
+                  # Get the expected value (base rate) for bounded explainability
+
+
+
+
+
+
+
+                  expected_value = explainer.expected_value
+
+
+
+
+
+
+
+                  if isinstance(expected_value, list):
+
+
+
+
+
+
+
+                      expected_value = expected_value[1]
+
+
+
+
+
+
+
+                  
+
+
+
+
+
+
+
+                  # Calculate how features move from base to prediction
+
+
+
+
+
+
+
+                  base_probability = 1 / (1 + np.exp(-expected_value))  # Convert log-odds to probability
+
+
+
+
+
+
+
+                  final_probability = probability
+
+
+
+
+
+
+
+                  
+
+
+
+
+
+
+
+                  exp_col1, exp_col2, exp_col3 = st.columns([1, 1, 1])
+
+
+
+
+
+
+
+                  with exp_col1:
+
+
+
+
+
+
+
+                      st.write("Base expectation:")
+
+
+
+
+
+
+
+                      st.write(f"Average model output: {base_probability:.1%}")
+
+
+
+
+
+
+
+                      
+
+
+
+
+
+
+
+                  with exp_col2:
+
+
+
+
+
+
+
+                      st.write("Feature contributions:")
+
+
+
+
+
+
+
+                      st.caption("Top features pushing prediction:")
+
+
+
+
+
+
+
+                      
+
+
+
+
+
+
+
+                  with exp_col3:
+
+
+
+
+
+
+
+                      st.write("Final prediction:")
+
+
+
+
+
+
+
+                      st.write(f"{final_probability:.1%} probability")
+
+
+
+
+
+
+
+                      
+
+
+
+
+
+
+
+                  st.write(")")  # Spacer
+
+
+
+
+
+
+
+                  
+
+
+
+
+
+
+
+                  # Show top positive and negative features
+
+
+
+
+
+
+
+                  feat_col1, feat_col2 = st.columns(2)
+
+
+
+
+
+
+
+                  with feat_col1:
+
+
+
+
+
+
+
+                      st.write("Pushed toward 'high quality':")
+
+
+
+
+
+
+
+                      for _, row in top_pos.iterrows():
+
+
+
+
+
+
+
+                          st.write(f"- {row['feature']} (+{row['shap_value']:.3f})")
+
+
+
+
+
+
+
+                  with feat_col2:
+
+
+
+
+
+
+
+                      st.write("Pushed toward 'low quality':")
+
+
+
+
+
+
+
+                      for _, row in top_neg.iterrows():
+
+
+
+
+
+
+
+                          st.write(f"- {row['feature']} ({row['shap_value']:.3f})")
+
+
+
+
+
+
+
+              except Exception as err:
+
+
+
+
+
+
+
+                  st.caption(f"Explanation unavailable: {err}")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+st.title("⭐ RepoScore: GitHub Repository Quality Predictor")
+
+
+
+
+
+
+
+st.caption("Analyze a public GitHub repository to predict its overall quality score.")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+repo_input = st.text_input("Enter Repository (owner/name):", placeholder="scikit-learn/scikit-learn")
+
+
+
+
+
+
+
+threshold = st.slider(
+
+
+
+
+
+
+
+    "Quality threshold", min_value=0.1, max_value=0.9, value=0.5, step=0.05,
+
+
+
+
+
+
+
+    help="Lower = higher recall, more false positives (catches more true 'quality' repos, "
+
+
+
+
+
+
+
+         "but calls more low-quality ones 'high' too). Higher = higher precision, more false "
+
+
+
+
+
+
+
+         "negatives. 5-fold CV: F1 peaks around 0.3 (precision 0.67/recall 0.89) vs the default "
+
+
+
+
+
+
+
+         "0.5 (precision 0.89/recall 0.47). See README for the full table."
+
+
+
+
+
+
+
+)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+if st.button("Predict Quality", type="primary") and repo_input:
+
+
+
+
+
+
+
+    with st.spinner("Fetching repo data from GitHub API..."):
+
+
+
+
+
+
+
+        try:
+
+
+
+
+
+
+
+            features = fetch_repo_features(repo_input, headers=headers)
+
+
+
+
+
+
+
+        except RepoFetchError as e:
+
+
+
+
+
+
+
+            st.error(str(e))
+
+
+
+
+
+
+
+        else:
+
+
+
+
+
+
+
+            topics = features["topics"]
+
+
+
+
+
+
+
+            repo_age_days = features["repo_age_days"]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            X_dense = featurize(features, tfidf_readme, tfidf_topics, scaler)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            # Generate Predictions -- use the user-chosen threshold, not the
+
+
+
+
+
+
+
+            # model's built-in 0.5 cutoff (see slider help text / README for why)
+
+
+
+
+
+
+
+            probability = rf_model.predict_proba(X_dense)[0][1]
+
+
+
+
+
+
+
+            prediction = 1 if probability >= threshold else 0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            # Log to audit trail
+
+
+
+
+
+
+
+            log_audit_trail(features, probability, prediction, threshold)
+
+
+
+
+
+
+
+            # Check for exceptions and low confidence
+
+
+
+
+
+
+
+            exceptions = check_exceptions(features)
+
+
+
+
+
+
+
+            low_confidence = 0.4 <= probability <= 0.6  # Model uncertainty band
+
+
+
+
+
+
+
+            warning_messages = exceptions.copy()
+
+
+
+
+
+
+
+            if low_confidence:
+
+
+
+
+
+
+
+                warning_messages.append("⚠️ Low confidence prediction (probability near 0.5).")
+
+
+
+
+
+
+
+            # Display Results UI
+
+
+
+
+
+
+
+            st.subheader(f"Results for [{features['full_name']}]({features['html_url']})")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            col1, col2, col3, col4 = st.columns(4)
+
+
+
+
+
+
+
+            col1.metric("⭐ Stars", features["stars"])
+
+
+
+
+
+
+
+            col2.metric("ðŸ´ Forks", features["forks"])
+
+
+
+
+
+
+
+            col3.metric("ðŸ› Open Issues", features["open_issues"])
+
+
+
+
+
+
+
+            col4.metric("ðŸ“… Age (Days)", repo_age_days)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            if topics:
+
+
+
+
+
+
+
+                st.write("**Topics:** " + ", ".join([f"`{t}`" for t in topics]))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            st.divider()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            # Display warnings if any
+
+
+
+
+
+
+
+            if warning_messages:
+
+
+
+
+
+
+
+                st.warning(" \\n".join(warning_messages))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            st.divider()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            res_col1, res_col2 = st.columns([2, 1])
+
+
+
+
+
+
+
+            with res_col1:
+
+
+
+
+
+
+
+                if prediction == 1:
+
+
+
+
+
+
+
+                    st.success("### ðŸŸ¢ Predicted: High Quality Repository")
+
+
+
+
+
+
+
+                else:
+
+
+
+
+
+
+
+                    st.warning("### ðŸ”´ Predicted: Low Quality / Unmaintained Repository")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            with res_col2:
+
+
+
+
+
+
+
                 st.metric("Model Confidence", f"{probability:.1%}")
 
 
@@ -3678,6 +2918,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
 
 
+                          # --- Explainability: why did the model say this? ---
 
 
 
@@ -3685,6 +2926,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
 
 
+              st.divider()
 
 
 
@@ -3692,17 +2934,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
 
 
-
-
-                # --- Explainability: why did the model say this? ---
-
-
-
-
-
-
-
-                st.divider()
+              st.subheader("Why this prediction?")
 
 
 
@@ -3710,15 +2942,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
 
 
-                st.subheader("Why this prediction?")
-
-
-
-
-
-
-
-                try:
+              try:
 
 
 
@@ -4191,6 +3415,17 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
 
                   st.caption(f"Explanation unavailable: {err}"
+
+
+
+
+
+
+
+
+
+
+
 
 
 
