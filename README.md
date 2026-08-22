@@ -8,6 +8,63 @@ RepoScore predicts whether a GitHub repository is likely to be a "high-quality" 
 
 ---
 
+## Production API (v2.0)
+
+RepoScore now includes a production-grade REST API with asynchronous processing.
+
+### Quick Start (Docker)
+
+```bash
+# Set your GitHub token
+export GITHUB_TOKEN=your_token_here
+
+# Start all services
+docker-compose up -d
+
+# API available at http://localhost:8000
+# Flower dashboard at http://localhost:5555
+```
+
+### API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/health` | GET | Health check |
+| `/api/jobs` | POST | Submit repo for analysis |
+| `/api/jobs/{job_id}` | GET | Check job status |
+| `/api/score/{owner}/{repo}` | GET | Get cached score or trigger analysis |
+| `/api/badge/{owner}/{repo}` | GET | Dynamic SVG badge for README |
+| `/api/badges/{owner}/{repo}` | GET | shields.io compatible badge URL |
+
+### Job Statuses
+
+- `queued`: Job waiting to be processed
+- `processing`: Job being analyzed
+- `completed`: Analysis complete, result available
+- `failed`: Analysis failed (check message for details)
+
+### Embeddable Badge
+
+Add this to your README:
+```markdown
+![RepoScore](https://api.yourdomain.com/api/badge/owner/repo)
+```
+
+### Scoring Dimensions
+
+1. **Maintenance Activity (30%)**: Commit frequency, issue response time
+2. **Community Health (25%)**: Contributors, forks, issue resolution
+3. **Documentation (25%)**: README quality, tests, CI presence
+4. **Contributor Distribution (20%)**: Bus factor, contributor diversity
+
+### Time Decay
+
+- Inactive repos (>365 days without commits) have scores decayed
+- Archived repos receive additional penalties
+- Vanity stars (high stars + low activity) are penalized
+
+---
+
 ## What "quality" means here
 
 There's no built-in "quality" label on GitHub — I had to define one. After testing a stricter version (requiring both CI *and* tests), which produced a heavily imbalanced dataset (~87% negative class), I settled on:

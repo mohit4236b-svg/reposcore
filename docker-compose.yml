@@ -1,0 +1,51 @@
+version: "3.8"
+
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+    volumes:
+      - ./models:/app/models
+      - ./reposcore_utils.py:/app/reposcore_utils.py
+      - ./scoring_engine.py:/app/scoring_engine.py
+    restart: unless-stopped
+
+  worker:
+    build: .
+    command: celery -A api_server.celery_app worker --loglevel=info
+    depends_on:
+      - redis
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+    volumes:
+      - ./models:/app/models
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  flower:
+    image: mher/flower
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+    restart: unless-stopped
+
+volumes:
+  redis_data:

@@ -1,3 +1,4 @@
+# Core dependencies
 joblib==1.5.3
 numpy==2.5.2
 pandas==3.0.5
@@ -7,3 +8,9 @@ scikit-learn==1.8.0
 scipy==1.18.1
 shap==0.52.0
 streamlit==1.62.0
+
+# Production backend dependencies
+fastapi==0.115.0
+uvicorn[standard]==0.30.0
+redis==5.0.5
+celery==5.4.0
