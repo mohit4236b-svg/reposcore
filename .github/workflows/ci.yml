@@ -27,3 +27,14 @@ jobs:
 
       - name: Run tests
         run: pytest tests/ -v
+
+      - name: Check for large files (>5MB outside LFS)
+        run: |
+          find . -type f -size +5M ! -path "./.git/*" ! -name "*.git*" | while read f; do
+            if ! git lfs ls-files 2>/dev/null | grep -q "$(echo "$f" | sed 's/.*\///')"; then
+              echo "ERROR: File $f is larger than 5MB and not tracked by LFS"
+              echo "Please track it with: git lfs track \"$f\""
+              exit 1
+            fi
+          done
+          echo "No large untracked files found"
