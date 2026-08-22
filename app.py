@@ -1,4 +1,5 @@
-﻿import base64
+﻿# -*- coding: utf-8 -*-
+import base64
 import os
 import pickle
 import joblib
@@ -52,13 +53,13 @@ def load_ml_assets():
         file_path = os.path.join(model_dir, filename)
 
         if not os.path.exists(file_path):
-            st.error(f"âŒ Missing file: `{filename}` was not found in the `models/` directory.")
+            st.error(f"❌ Missing file: `{filename}` was not found in the `models/` directory.")
             st.stop()
 
         try:
             loaded[key] = safe_load(file_path)
         except Exception as err:
-            st.error(f"âŒ Failed loading `{filename}`:")
+            st.error(f"❌ Failed loading `{filename}`:")
             st.exception(err)
             st.stop()
 
@@ -204,9 +205,9 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
             col1, col2, col3, col4 = st.columns(4)
             col1.metric("⭐ Stars", features["stars"])
-            col2.metric("ðŸ´ Forks", features["forks"])
-            col3.metric("ðŸ› Open Issues", features["open_issues"])
-            col4.metric("ðŸ“… Age (Days)", repo_age_days)
+            col2.metric("🍴 Forks", features["forks"])
+            col3.metric("🐛 Open Issues", features["open_issues"])
+            col4.metric("📅 Age (Days)", repo_age_days)
 
             if topics:
                 st.write("**Topics:** " + ", ".join([f"`{t}`" for t in topics]))
@@ -222,14 +223,14 @@ if st.button("Predict Quality", type="primary") and repo_input:
             res_col1, res_col2 = st.columns([2, 1])
             with res_col1:
                 if prediction == 1:
-                    st.success("### ðŸŸ¢ Predicted: High Quality Repository")
+                    st.success("### ✅ Predicted: High Quality Repository")
                 else:
-                    st.warning("### ðŸ”´ Predicted: Low Quality / Unmaintained Repository")
+                    st.warning("### ⚠️ Predicted: Low Quality / Unmaintained Repository")
 
             with res_col2:
                 st.metric("Model Confidence", f"{probability:.1%}")
 
-                        # --- Explainability: why did the model say this? ---
+            # --- Explainability: why did the model say this? ---
             st.divider()
             st.subheader("Why this prediction?")
             try:
@@ -255,12 +256,13 @@ if st.button("Predict Quality", type="primary") and repo_input:
                 contrib = contrib[contrib["shap_value"] != 0]
                 top_pos = contrib.sort_values("shap_value", ascending=False).head(6)
                 top_neg = contrib.sort_values("shap_value", ascending=True).head(6)
-                  
+
                 # Get the expected value (base rate) for bounded explainability
                 expected_value = explainer.expected_value
-                if isinstance(expected_value, list):
-                    expected_value = expected_value[1]
-                  
+                if isinstance(expected_value, (list, np.ndarray)):
+                    expected_value = np.ravel(expected_value)[-1]
+                expected_value = float(expected_value)
+                
                 # Calculate how features move from base to prediction
                 base_probability = 1 / (1 + np.exp(-expected_value))  # Convert log-odds to probability
                 final_probability = probability
