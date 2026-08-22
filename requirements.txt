@@ -1,11 +1,12 @@
-# Runtime dependencies - pinned exact versions for reproducibility
-# These versions are known to work with the trained model artifacts
-streamlit==1.35.0
-requests==2.32.3
-joblib==1.4.2
-scikit-learn==1.5.0
-pandas==2.2.3
-numpy==2.0.2
-scipy==1.14.1
-python-dotenv==1.0.1
-shap==0.45.1
+# Runtime dependencies - pinned exact versions
+# Must be compatible with the trained model artifacts (rf_model.pkl, tfidf_*.pkl, scaler.pkl)
+joblib==1.5.3
+numpy==2.5.1
+pandas==3.0.5
+python-dotenv==1.2.2
+requests==2.34.2
+scikit-learn==1.9.0
+scipy==1.18.0
+shap==0.46.0
+streamlit==1.46.0
+pytest==9.1.1
