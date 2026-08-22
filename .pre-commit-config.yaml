@@ -1,0 +1,16 @@
+repos:
+  - repo: local
+    hooks:
+      - id: python-syntax
+        name: Check Python syntax
+        entry: python -m py_compile app.py reposcore_utils.py reposcore_cli.py
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      - id: check-requirements-installable
+        name: Verify requirements.txt is installable
+        entry: python -m pip install --dry-run -r requirements.txt
+        language: system
+        pass_filenames: false
+        require_serial: true
