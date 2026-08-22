@@ -287,10 +287,10 @@ if st.button("Predict Quality", type="primary") and repo_input:
                 with feat_col1:
                     st.write("**Pushed toward 'high quality':**")
                     for _, row in top_pos.iterrows():
-                        st.write(f"- {row['feature']} (+{row['shap_value']:.3f})")
+                        st.markdown(f":green[✅ {row['feature']} (+{row['shap_value']:.3f})]")
                 with feat_col2:
                     st.write("**Pushed toward 'low quality':**")
                     for _, row in top_neg.iterrows():
-                        st.write(f"- {row['feature']} ({row['shap_value']:.3f})")
+                        st.markdown(f":red[❌ {row['feature']} ({row['shap_value']:.3f})]")
             except Exception as err:
                 st.caption(f"Explanation unavailable: {err}")
