@@ -8,29 +8,6 @@ RepoScore predicts whether a GitHub repository is likely to be a "high-quality" 
 
 ---
 
-## Scoring Razorpay's own repos
-
-To demonstrate the model's reasoning, here's how Razorpay's public repositories score:
-
-| repo | quality | confidence | stars | forks |
-|------|---------|------------|-------|-------|
-| razorpay/razorpay-mcp-server | high | 39% | 229 | 35 |
-| razorpay/razorpay-cli | high | 35% | 49 | 6 |
-| razorpay/genesis | low | 3% | 1 | 0 |
-| razorpay/golib | low | 4% | 0 | 2 |
-| razorpay/ai-playbook | low | 29% | 4 | 2 |
-| razorpay/n8n-nodes-razorpay | low | 29% | 1 | 1 |
-| razorpay/scoop-razorpay-cli | low | 19% | 0 | 0 |
-| razorpay/homebrew-razorpay-cli | low | 20% | 0 | 0 |
-| razorpay/razorpay-banking-wrapper-sdk | low | 15% | 0 | 0 |
-| razorpay/razorpay-turbo-custom | low | 3% | 0 | 0 |
-| razorpay/razorpay-turbo-pod | low | 3% | 0 | 0 |
-| razorpay/markdown-docs | low | 6% | 0 | 0 |
-
-**What the scores show:** The only two Razorpay repos scoring as "high quality" are the two most mature — `razorpay-cli` (49 stars, 6 forks) and the more recent `razorpay-mcp-server` (229 stars, 35 forks, 42 days of recent activity). Most internal tools and SDKs have few stars, no forks, and little activity, resulting in low confidence predictions. The model's SHAP explanation shows these scores are driven by activity signals (days since last commit, forks) more than README content, reflecting that quality correlates with active maintenance rather than just documentation.
-
----
-
 ## What "quality" means here
 
 There's no built-in "quality" label on GitHub — I had to define one. After testing a stricter version (requiring both CI *and* tests), which produced a heavily imbalanced dataset (~87% negative class), I settled on:
