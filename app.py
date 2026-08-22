@@ -229,66 +229,66 @@ if st.button("Predict Quality", type="primary") and repo_input:
             with res_col2:
                 st.metric("Model Confidence", f"{probability:.1%}")
 
-                          # --- Explainability: why did the model say this? ---
-              st.divider()
-              st.subheader("Why this prediction?")
-              try:
-                  explainer = load_explainer(rf_model)
-                  shap_values = explainer.shap_values(X_dense, check_additivity=False)
+                        # --- Explainability: why did the model say this? ---
+            st.divider()
+            st.subheader("Why this prediction?")
+            try:
+                explainer = load_explainer(rf_model)
+                shap_values = explainer.shap_values(X_dense, check_additivity=False)
 
-                  # Newer shap versions return one ndarray shaped
-                  # (n_samples, n_features, n_classes); older versions return a
-                  # list of one array per class. Handle both, taking class 1.
-                  if isinstance(shap_values, list):
-                      sv = shap_values[1][0]
-                  elif np.ndim(shap_values) == 3:
-                      sv = shap_values[0, :, 1]
-                  else:
-                      sv = shap_values[0]
+                # Newer shap versions return one ndarray shaped
+                # (n_samples, n_features, n_classes); older versions return a
+                # list of one array per class. Handle both, taking class 1.
+                if isinstance(shap_values, list):
+                    sv = shap_values[1][0]
+                elif np.ndim(shap_values) == 3:
+                    sv = shap_values[0, :, 1]
+                else:
+                    sv = shap_values[0]
 
-                  feature_names = (
-                      list(tfidf_readme.get_feature_names_out()) +
-                      list(tfidf_topics.get_feature_names_out()) +
-                      STRUCTURED_COLS
-                  )
-                  contrib = pd.DataFrame({"feature": feature_names, "shap_value": sv})
-                  contrib = contrib[contrib["shap_value"] != 0]
-                  top_pos = contrib.sort_values("shap_value", ascending=False).head(6)
-                  top_neg = contrib.sort_values("shap_value", ascending=True).head(6)
+                feature_names = (
+                    list(tfidf_readme.get_feature_names_out()) +
+                    list(tfidf_topics.get_feature_names_out()) +
+                    STRUCTURED_COLS
+                )
+                contrib = pd.DataFrame({"feature": feature_names, "shap_value": sv})
+                contrib = contrib[contrib["shap_value"] != 0]
+                top_pos = contrib.sort_values("shap_value", ascending=False).head(6)
+                top_neg = contrib.sort_values("shap_value", ascending=True).head(6)
                   
-                  # Get the expected value (base rate) for bounded explainability
-                  expected_value = explainer.expected_value
-                  if isinstance(expected_value, list):
-                      expected_value = expected_value[1]
+                # Get the expected value (base rate) for bounded explainability
+                expected_value = explainer.expected_value
+                if isinstance(expected_value, list):
+                    expected_value = expected_value[1]
                   
-                  # Calculate how features move from base to prediction
-                  base_probability = 1 / (1 + np.exp(-expected_value))  # Convert log-odds to probability
-                  final_probability = probability
+                # Calculate how features move from base to prediction
+                base_probability = 1 / (1 + np.exp(-expected_value))  # Convert log-odds to probability
+                final_probability = probability
                   
-                  exp_col1, exp_col2, exp_col3 = st.columns([1, 1, 1])
-                  with exp_col1:
-                      st.write("**Base expectation:**")
-                      st.write(f"Average model output: {base_probability:.1%}")
+                exp_col1, exp_col2, exp_col3 = st.columns([1, 1, 1])
+                with exp_col1:
+                    st.write("**Base expectation:**")
+                    st.write(f"Average model output: {base_probability:.1%}")
                       
-                  with exp_col2:
-                      st.write("**Feature contributions:**")
-                      st.caption("Top features pushing prediction:")
+                with exp_col2:
+                    st.write("**Feature contributions:**")
+                    st.caption("Top features pushing prediction:")
                       
-                  with exp_col3:
-                      st.write("**Final prediction:**")
-                      st.write(f"{final_probability:.1%} probability")
+                with exp_col3:
+                    st.write("**Final prediction:**")
+                    st.write(f"{final_probability:.1%} probability")
                       
-                  st.write("")  # Spacer
+                st.write("")  # Spacer
                   
-                  # Show top positive and negative features
-                  feat_col1, feat_col2 = st.columns(2)
-                  with feat_col1:
-                      st.write("**Pushed toward 'high quality':**")
-                      for _, row in top_pos.iterrows():
-                          st.write(f"- {row['feature']} (+{row['shap_value']:.3f})")
-                  with feat_col2:
-                      st.write("**Pushed toward 'low quality':**")
-                      for _, row in top_neg.iterrows():
-                          st.write(f"- {row['feature']} ({row['shap_value']:.3f})")
-              except Exception as err:
-                  st.caption(f"Explanation unavailable: {err}"
+                # Show top positive and negative features
+                feat_col1, feat_col2 = st.columns(2)
+                with feat_col1:
+                    st.write("**Pushed toward 'high quality':**")
+                    for _, row in top_pos.iterrows():
+                        st.write(f"- {row['feature']} (+{row['shap_value']:.3f})")
+                with feat_col2:
+                    st.write("**Pushed toward 'low quality':**")
+                    for _, row in top_neg.iterrows():
+                        st.write(f"- {row['feature']} ({row['shap_value']:.3f})")
+            except Exception as err:
+                st.caption(f"Explanation unavailable: {err}")
