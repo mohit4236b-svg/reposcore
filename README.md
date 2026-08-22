@@ -141,9 +141,13 @@ pip install -r requirements.txt
 ```
 
 Create a `.env` file with your own GitHub personal access token:
-```
-GITHUB_TOKEN=your_token_here
-```
+ ```
+ GITHUB_TOKEN=your_token_here
+ ```
+
+ **Important for Streamlit Cloud deployment:** The live demo at [reposcoree.streamlit.app](https://reposcoree.streamlit.app) will exceed the 60 req/hour unauthenticated limit quickly, causing it to fail on many repos. To deploy your own instance or ensure the demo works reliably for local testing, set `GITHUB_TOKEN` in:
+ - **Local `.env` file** (shown above), or
+ - **Streamlit Cloud secrets**: In your app's settings → Secrets → add `GITHUB_TOKEN=your_token_here`
 
 Run the demo (uses the pre-trained model):
 ```bash

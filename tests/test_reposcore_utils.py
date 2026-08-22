@@ -98,3 +98,39 @@ def test_cli_csv_output_has_expected_header():
     out = reposcore_cli.to_csv(results)
     assert out.splitlines()[0] == ",".join(reposcore_cli.CSV_FIELDS)
     assert "a/b" in out
+
+
+def test_fetch_repo_features_raises_on_readme_rate_limit(monkeypatch):
+    """A 403 on the README endpoint (rate limit) should raise RepoFetchError,
+    not silently set has_readme=0. This prevents the model from silently
+    degrading to using only ~20% of its features when rate-limited."""
+    from unittest.mock import MagicMock
+    from reposcore_utils import fetch_repo_features, RepoFetchError
+
+    # Mock response for repo metadata - returns 200 with valid repo
+    mock_repo_resp = MagicMock()
+    mock_repo_resp.status_code = 200
+    mock_repo_resp.json.return_value = {
+        "full_name": "good/repo",
+        "html_url": "https://github.com/good/repo",
+        "topics": [],
+        "created_at": "2020-01-01T00:00:00Z",
+        "pushed_at": "2024-01-01T00:00:00Z",
+        "stargazers_count": 100,
+        "forks_count": 10,
+        "open_issues_count": 5,
+    }
+
+    # Mock response for README - returns 403 (rate limit)
+    mock_readme_resp = MagicMock()
+    mock_readme_resp.status_code = 403
+
+    import requests
+    monkeypatch.setattr(requests, "get", lambda url, headers=None: mock_repo_resp if "/readme" not in url else mock_readme_resp)
+
+    try:
+        fetch_repo_features("good/repo", headers={})
+        assert False, "Expected RepoFetchError to be raised"
+    except RepoFetchError as e:
+        assert "rate limit" in str(e).lower()
+        assert "README" in str(e)

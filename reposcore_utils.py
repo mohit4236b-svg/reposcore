@@ -64,6 +64,8 @@ def fetch_repo_features(full_name, headers=None):
     repo = repo_resp.json()
 
     readme_resp = requests.get(f"https://api.github.com/repos/{full_name}/readme", headers=headers)
+    if readme_resp.status_code == 403:
+        raise RepoFetchError("GitHub API rate limit exceeded while fetching README. Set GITHUB_TOKEN to increase the limit.")
     has_readme = readme_resp.status_code == 200
     readme_text, readme_size = "", 0
     if has_readme:
