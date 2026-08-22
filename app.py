@@ -200,6 +200,12 @@ if st.button("Predict Quality", type="primary") and repo_input:
             warning_messages = exceptions.copy()
             if low_confidence:
                 warning_messages.append("⚠️ Low confidence prediction (probability near 0.5).")
+            
+            # Confidence report - explicit match rate and exceptions count
+            n_exceptions = len(exceptions)
+            n_low_confidence_reasons = 1 if low_confidence else 0
+            total_issues = n_exceptions + n_low_confidence_reasons
+            
             # Display Results UI
             st.subheader(f"Results for [{features['full_name']}]({features['html_url']})")
 
@@ -214,9 +220,10 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
             st.divider()
 
-            # Display warnings if any
+            # Display confidence report
+            st.caption(f"Confidence report: **{probability:.1%}** match rate | {total_issues} exception{'s' if total_issues != 1 else ''} flagged")
             if warning_messages:
-                st.warning(" \\n".join(warning_messages))
+                st.warning("\n\n".join(warning_messages))
 
             st.divider()
 
