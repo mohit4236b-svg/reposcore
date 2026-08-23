@@ -21,6 +21,8 @@ jobs:
           --health-retries 5
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -30,7 +32,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev libffi-dev python3-dev redis-tools
+          sudo apt-get install -y build-essential libssl-dev libffi-dev python3-dev redis-tools git-lfs
         shell: bash
 
       - name: Install dependencies
@@ -52,8 +54,16 @@ jobs:
 
       - name: Check for large files (>5MB outside LFS)
         run: |
-          find . -type f -size +5M ! -path "./.git/*" ! -path "*/site-packages/*" ! -path "*/vendor/*" ! -path "*/venv/*" | while read f; do
-            echo "WARNING: Large file detected: $f"
-          done
-          echo "Large file check complete"
+          large_files=$(find . -type f -size +5M ! -path "./.git/*" ! -path "*/site-packages/*" ! -path "*/vendor/*" ! -path "*/venv/*" ! -name "*.png" ! -name "*.jpg" ! -name "*.jpeg" ! -name "*.gif" ! -name "*.svg" ! -name "*.ico")
+          if [ -n "$large_files" ]; then
+            echo "ERROR: The following files are larger than 5MB and should be tracked with Git LFS:"
+            echo "$large_files"
+            echo ""
+            echo "To track them with LFS, run:"
+            echo "  git lfs track \"<filename>\""
+            echo "  git add <filename>"
+            echo "  git commit"
+            exit 1
+          fi
+          echo "No large files found outside LFS. Check complete."
         shell: bash
