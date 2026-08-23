@@ -56,6 +56,51 @@ def mock_redis():
             yield fake_redis
 
 
+@pytest.fixture(autouse=True)
+def clear_redis_in_ci():
+    """Clear Redis before each test when in CI to ensure test isolation."""
+    import os
+    if os.getenv("GITHUB_ACTIONS"):
+        from api_server import get_redis_client
+        from cache_layer import get_cache
+        
+        # Clear all keys before test
+        redis_client = get_redis_client()
+        try:
+            keys = redis_client.keys("*")
+            if keys:
+                redis_client.delete(*keys)
+        except:
+            pass
+        
+        cache = get_cache()
+        try:
+            cache.flush_pattern("*")
+        except:
+            pass
+    
+    yield
+    
+    # Also clear after test in CI
+    if os.getenv("GITHUB_ACTIONS"):
+        from api_server import get_redis_client
+        from cache_layer import get_cache
+        
+        redis_client = get_redis_client()
+        try:
+            keys = redis_client.keys("*")
+            if keys:
+                redis_client.delete(*keys)
+        except:
+            pass
+        
+        cache = get_cache()
+        try:
+            cache.flush_pattern("*")
+        except:
+            pass
+
+
 class TestCacheTTLLogic:
     """Test Redis TTL calculation logic matching the docstring."""
     
