@@ -23,8 +23,8 @@ def mock_redis():
     import fakeredis
     fake_redis = fakeredis.FakeRedis(decode_responses=True)
     
-    # Mock both api_server.redis_client and cache_layer.get_cache
-    with patch('api_server.redis_client', fake_redis):
+    # Mock api_server.get_redis_client and cache_layer.get_cache
+    with patch('api_server.get_redis_client', return_value=fake_redis):
         with patch('cache_layer.get_cache') as mock_get_cache:
             mock_cache = MagicMock()
             # Configure the mock cache to use the fake redis

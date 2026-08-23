@@ -34,8 +34,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Redis client for job tracking
-redis_client = redis.Redis(host="localhost", port=6379, db=0, decode_responses=True)
+# Global Redis client for job tracking - lazily initialized
+_redis_client = None
+
+
+def get_redis_client():
+    """Get the global Redis client, creating it if needed."""
+    global _redis_client
+    if _redis_client is None:
+        _redis_client = redis.Redis(host="localhost", port=6379, db=0, decode_responses=True)
+    return _redis_client
 
 
 @app.get("/api/health")
@@ -54,7 +62,7 @@ async def submit_analysis(owner: str = Query(...), repo: str = Query(...),
     job_id = str(uuid.uuid4())
     
     # Store job in Redis
-    redis_client.hset(f"job:{job_id}", mapping={
+    get_redis_client().hset(f"job:{job_id}", mapping={
         "owner": owner,
         "repo": repo,
         "threshold": threshold,
@@ -68,9 +76,9 @@ async def submit_analysis(owner: str = Query(...), repo: str = Query(...),
     result = await analyze_repo(owner, repo, threshold)
     
     # Store result
-    redis_client.setex(f"repo:{owner}:{repo}", 86400, json.dumps(result))
-    redis_client.hset(f"job:{job_id}", "status", "completed")
-    redis_client.hset(f"job:{job_id}", "result_key", f"repo:{owner}:{repo}")
+    get_redis_client().setex(f"repo:{owner}:{repo}", 86400, json.dumps(result))
+    get_redis_client().hset(f"job:{job_id}", "status", "completed")
+    get_redis_client().hset(f"job:{job_id}", "result_key", f"repo:{owner}:{repo}")
     
     return {"job_id": job_id, "status": "completed", "result_key": f"repo:{owner}:{repo}"}
 
@@ -110,14 +118,14 @@ async def analyze_repo(owner: str, repo: str, threshold: float = 0.3) -> Dict[st
 @app.get("/api/jobs/{job_id}")
 async def get_job_status(job_id: str):
     """Get the status of a submitted job."""
-    job_data = redis_client.hgetall(f"job:{job_id}")
+    job_data = get_redis_client().hgetall(f"job:{job_id}")
     
     if not job_data:
         raise HTTPException(status_code=404, detail="Job not found")
     
     result_key = job_data.get("result_key")
     if result_key:
-        result_data = redis_client.get(result_key)
+        result_data = get_redis_client().get(result_key)
         if result_data:
             job_data["result"] = json.loads(result_data)
     
