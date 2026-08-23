@@ -54,8 +54,9 @@ jobs:
 
       - name: Check for large files (>5MB outside LFS)
         run: |
-          # Get list of files tracked by LFS
+          # Get list of files tracked by LFS (just the file paths)
           lfs_tracked=$(git lfs ls-files --name-only 2>/dev/null)
+          
           # Find large files not in .git, not in build artifacts, not images, and not LFS-tracked
           large_files=""
           while IFS= read -r f; do
