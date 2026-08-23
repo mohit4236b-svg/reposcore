@@ -9,6 +9,12 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: --entrypoint redis-server
     steps:
       - uses: actions/checkout@v4
 
@@ -27,6 +33,8 @@ jobs:
 
       - name: Run tests
         run: pytest tests/ -v
+        env:
+          REDIS_URL: redis://localhost:6379/0
 
       - name: Check for large files (>5MB outside LFS)
         run: |
