@@ -12,6 +12,13 @@ from scipy.sparse import hstack
 
 from reposcore_utils import strip_badges, fetch_repo_features, featurize, RepoFetchError, STRUCTURED_COLS
 
+# Import AI review module
+try:
+    from ai_review import generate_ai_review, format_ai_review_for_display
+    AI_REVIEW_AVAILABLE = True
+except ImportError:
+    AI_REVIEW_AVAILABLE = False
+
 # Load environment variables
 load_dotenv()
 
@@ -301,3 +308,20 @@ if st.button("Predict Quality", type="primary") and repo_input:
                         st.markdown(f":red[❌ {row['feature']} ({row['shap_value']:.3f})]")
             except Exception as err:
                 st.caption(f"Explanation unavailable: {err}")
+
+            # --- AI Review Section ---
+            st.divider()
+            st.subheader("AI Review")
+            if AI_REVIEW_AVAILABLE:
+                try:
+                    ai_result = generate_ai_review(
+                        readme_content=features.get("readme_text_clean", ""),
+                        features=features,
+                        prediction=prediction,
+                        probability=probability
+                    )
+                    st.markdown(format_ai_review_for_display(ai_result))
+                except Exception as err:
+                    st.caption(f"AI review unavailable: {err}")
+            else:
+                st.caption("AI review unavailable: ai_review module not found.")

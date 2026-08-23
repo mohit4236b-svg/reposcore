@@ -13,3 +13,4 @@ fakeredis==2.37.1
 fastapi==0.141.1
 redis==8.1.0
 uvicorn==0.51.0
+google-genai==1.8.0
