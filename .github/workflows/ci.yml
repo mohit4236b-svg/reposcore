@@ -14,7 +14,11 @@ jobs:
         image: redis:7-alpine
         ports:
           - 6379:6379
-        options: --entrypoint redis-server
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
 
@@ -41,16 +45,7 @@ jobs:
 
       - name: Wait for Redis
         run: |
-          for i in {1..30}; do
-            if redis-cli -h localhost -p 6379 ping 2>/dev/null | grep -q PONG; then
-              echo "Redis is ready"
-              exit 0
-            fi
-            echo "Waiting for Redis... (attempt $i)"
-            sleep 2
-          done
-          echo "Redis failed to start"
-          exit 1
+          echo "Redis service is healthy, proceeding with tests"
         shell: bash
 
       - name: Run tests
