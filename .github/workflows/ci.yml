@@ -27,19 +27,23 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential libssl-dev libffi-dev python3-dev
+        shell: bash
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install --no-cache-dir -r requirements-dev.txt --verbose
+          python -m pip install --no-cache-dir -r requirements-dev.txt --verbose 2>&1 | tail -50
+        shell: bash
 
       - name: Check Python syntax
         run: python -m py_compile app.py reposcore_utils.py reposcore_cli.py
+        shell: bash
 
       - name: Run tests
         run: pytest tests/ -v
         env:
           REDIS_URL: redis://localhost:6379/0
+        shell: bash
 
       - name: Check for large files (>5MB outside LFS)
         run: |
@@ -51,3 +55,4 @@ jobs:
             fi
           done
           echo "No large untracked files found"
+        shell: bash
