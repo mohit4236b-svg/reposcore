@@ -76,8 +76,7 @@ def generate_ai_review(
         if len(readme_content) > max_readme_chars:
             readme_for_prompt += f'\n\n[README truncated from {len(readme_content)} to {max_readme_chars} characters]'
         
-        prompt = f"""You are an experienced software engineer reviewing a GitHub repository.
-Provide a concise, specific, and actionable 3-5 sentence review of this repository based on its README and metrics.
+                prompt = f"""You are an experienced software engineer reviewing a GitHub repository. Provide a technical assessment of the repository based on its README and observable metrics. Do not use promotional or marketing language. Do not mention the model, prediction, or confidence.
 
 Repository: {features.get('full_name', 'Unknown')}
 Stars: {features.get('stars', 0)} | Forks: {features.get('forks', 0)} | Open Issues: {features.get('open_issues', 0)}
@@ -90,14 +89,13 @@ README length: {features.get('readme_size', 0)} characters
 README Content:
 {readme_for_prompt}
 
-Write 3-5 sentences that:
-1. Reference specific details from the README (features, use cases, architecture, tech stack, etc.)
-2. Connect those details to the quality signals (stars, activity, documentation, tests, CI)
-3. Identify 1-2 SPECIFIC things this repo is missing or could improve (e.g., "no contributing guide", "missing CI badge", "README lacks installation steps", "no code of conduct", "sparse test coverage")
-4. Note what IS working well, but don't just praise - be specific about why it matters
-5. Avoid generic praise/criticism - every sentence must reference THIS repo's actual content
+Write 3-5 sentences covering:
+1. What the README describes (purpose, key features, tech stack, architecture) -- reference specific details
+2. How the observable metrics (stars, activity, contributors, CI/tests presence) align with or contradict the README's claims
+3. 1-2 concrete, actionable gaps to address (e.g., "Add a CONTRIBUTING.md", "Include installation steps in the README", "Set up CI with a badge", "Add code coverage reporting", "Document the API endpoints")
+4. One specific strength and why it lowers risk for adopters
 
-Do NOT mention the model, prediction, or confidence. Do NOT use marketing language ("exceptional", "elite", "cornerstone", "flagship", "outstanding"). Use neutral, engineering-focused tone."""
+Each sentence must reference THIS repo's actual content. Be direct, specific, and engineering-focused."""
         
         generation_config = types.GenerateContentConfig(
             temperature=0.3,
