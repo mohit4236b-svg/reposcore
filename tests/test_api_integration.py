@@ -21,13 +21,13 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 def mock_redis():
     """Mock Redis client for tests that don't need real Redis.
     
-    Only mocks when REDIS_URL is not set (i.e., not in CI environment).
-    In CI, we use the real Redis service.
+    Only mocks when not in CI environment (GITHUB_ACTIONS not set).
+    In CI, we use the real Redis service provided by GitHub Actions.
     """
     import os
     
-    # If REDIS_URL is set, we're in CI with real Redis - don't mock
-    if os.getenv("REDIS_URL"):
+    # If GITHUB_ACTIONS is set, we're in CI with real Redis - don't mock
+    if os.getenv("GITHUB_ACTIONS"):
         yield None
         return
     
