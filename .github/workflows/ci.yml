@@ -30,7 +30,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev libffi-dev python3-dev
+          sudo apt-get install -y build-essential libssl-dev libffi-dev python3-dev redis-tools
         shell: bash
 
       - name: Install dependencies
@@ -41,20 +41,6 @@ jobs:
 
       - name: Check Python syntax
         run: python -m py_compile app.py reposcore_utils.py reposcore_cli.py
-        shell: bash
-
-      - name: Wait for Redis
-        run: |
-          for i in {1..30}; do
-            if redis-cli -h 127.0.0.1 -p 6379 ping 2>/dev/null | grep -q PONG; then
-              echo "Redis is ready"
-              exit 0
-            fi
-            echo "Waiting for Redis... ($i/30)"
-            sleep 1
-          done
-          echo "Redis failed to become ready"
-          exit 1
         shell: bash
 
       - name: Run tests
