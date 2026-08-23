@@ -1,4 +1,5 @@
-name: CI
+path = r'c:\Users\ASUS\OneDrive\Documents\GitHub\reposcore\.github\workflows\ci.yml'
+content = '''name: CI
 
 on:
   push:
@@ -57,3 +58,6 @@ jobs:
           done
           echo "Large file check complete"
         shell: bash
+'''
+open(path, 'w').write(content)
+print('Written successfully')
