@@ -46,7 +46,7 @@ async def health_check():
 
 @app.post("/api/jobs")
 async def submit_analysis(owner: str = Query(...), repo: str = Query(...), 
-                          threshold: float = Query(0.5, ge=0.0, le=1.0)):
+                          threshold: float = Query(0.3, ge=0.0, le=1.0)):
     """
     Submit a repository for quality analysis.
     Returns a job ID for tracking progress.
@@ -65,7 +65,7 @@ async def submit_analysis(owner: str = Query(...), repo: str = Query(...),
     # Trigger background processing
     # In production: push to Celery queue
     # For now: process synchronously with job tracking
-    result = await analyze_repo(owner, repo)
+    result = await analyze_repo(owner, repo, threshold)
     
     # Store result
     redis_client.setex(f"repo:{owner}:{repo}", 86400, json.dumps(result))
@@ -75,7 +75,7 @@ async def submit_analysis(owner: str = Query(...), repo: str = Query(...),
     return {"job_id": job_id, "status": "completed", "result_key": f"repo:{owner}:{repo}"}
 
 
-async def analyze_repo(owner: str, repo: str) -> Dict[str, Any]:
+async def analyze_repo(owner: str, repo: str, threshold: float = 0.3) -> Dict[str, Any]:
     """Perform repository analysis with scoring."""
     scorer = RepoScorer()
     
@@ -100,7 +100,7 @@ async def analyze_repo(owner: str, repo: str) -> Dict[str, Any]:
     
     score_result = scorer.calculate_score(features)
     score_result["full_name"] = f"{owner}/{repo}"
-    score_result["threshold"] = 0.5
+    score_result["threshold"] = threshold
     score_result["prediction"] = 1 if score_result["total_score"] >= 50 else 0
     score_result["probability"] = score_result["total_score"] / 100
     

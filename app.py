@@ -167,7 +167,7 @@ st.caption("Analyze a public GitHub repository to predict its overall quality sc
 
 repo_input = st.text_input("Enter Repository (owner/name):", placeholder="scikit-learn/scikit-learn")
 threshold = st.slider(
-    "Quality threshold", min_value=0.1, max_value=0.9, value=0.5, step=0.05,
+    "Quality threshold", min_value=0.1, max_value=0.9, value=0.3, step=0.05,
     help="Lower = higher recall, more false positives (catches more true 'quality' repos, "
          "but calls more low-quality ones 'high' too). Higher = higher precision, more false "
          "negatives. 5-fold CV: F1 peaks around 0.3 (precision 0.67/recall 0.89) vs the default "

@@ -23,6 +23,30 @@ class DynamicCache:
     - Archived: 72 hours
     """
     
+    TTL_HOURS = {
+        "active": 6,
+        "moderately_active": 12,
+        "inactive_warm": 24,
+        "inactive": 48,
+        "archived": 72
+    }
+    
+    @staticmethod
+    def _calculate_ttl_for_activity(last_commit_days: int, is_archived: bool) -> int:
+        """Calculate TTL in seconds based on repository activity level."""
+        if is_archived:
+            ttl_hours = 72
+        elif last_commit_days < 30:
+            ttl_hours = 6
+        elif last_commit_days < 90:
+            ttl_hours = 12
+        elif last_commit_days < 365:
+            ttl_hours = 24
+        else:
+            ttl_hours = 48
+        
+        return ttl_hours * 3600
+    
     def __init__(self, redis_url: str = REDIS_URL):
         self.redis = redis.Redis.from_url(redis_url, decode_responses=True)
     

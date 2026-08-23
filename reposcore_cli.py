@@ -13,7 +13,7 @@ Usage:
     python reposcore_cli.py owner/repo --format csv
     python reposcore_cli.py owner/repo --threshold 0.3
 
-On --threshold: the model's default 0.5 cutoff is NOT F1-optimal on this
+On --threshold: the model's default 0.3 cutoff IS F1-optimal on this
 dataset. 5-fold CV shows F1 peaks around 0.3 (recall-favoring) --
 precision 0.665 / recall 0.893 / F1 0.762 -- versus 0.5's precision 0.894 /
 recall 0.474 / F1 0.619. Which one you want depends on what a false
@@ -55,7 +55,7 @@ def load_models():
     )
 
 
-def score_repo(full_name, models, headers, threshold=0.5):
+def score_repo(full_name, models, headers, threshold=0.3):
     rf_model, tfidf_readme, tfidf_topics, scaler = models
     try:
         features = fetch_repo_features(full_name, headers=headers)
@@ -92,8 +92,8 @@ def main():
     parser.add_argument("--file", help="path to a text file with one owner/repo per line")
     parser.add_argument("--pretty", action="store_true", help="pretty-print JSON output (ignored for --format csv)")
     parser.add_argument("--format", choices=["json", "csv"], default="json", help="output format (default: json)")
-    parser.add_argument("--threshold", type=float, default=0.5,
-                         help="probability cutoff for 'high' quality (default: 0.5). "
+    parser.add_argument("--threshold", type=float, default=0.3,
+                         help="probability cutoff for 'high' quality (default: 0.3). "
                               "See module docstring / README for the CV precision/recall trade-off per threshold.")
     args = parser.parse_args()
 

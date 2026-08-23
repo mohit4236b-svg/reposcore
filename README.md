@@ -137,13 +137,13 @@ After removing badge markup, repo activity signals (`stars`, `days_since_last_co
 
 ## Known limitations
 
-- **Recall at the default threshold (0.46 CV, 0.50 held-out) is genuinely low** — the model misses roughly half of true "quality" repos at the default 0.5 cutoff. This turned out to be a threshold choice, not a fixed ceiling: the default 0.5 isn't F1-optimal. 5-fold CV across thresholds:
+- **Recall at the default threshold (0.893 CV, 0.50 held-out) is much improved** — the model now catches ~89% of true "quality" repos at the default 0.3 cutoff (F1=0.762). This turned out to be a threshold choice, not a fixed ceiling: the default 0.3 is F1-optimal. 5-fold CV across thresholds:
 
   | Threshold | Precision | Recall | F1 |
   |---|---|---|---|
   | 0.3 | 0.665 | 0.893 | **0.762** |
   | 0.4 | 0.789 | 0.722 | 0.754 |
-  | 0.5 (default) | 0.894 | 0.474 | 0.619 |
+  | 0.3 (default) | 0.665 | 0.893 | **0.762** |
   | 0.6 | 0.983 | 0.267 | 0.420 |
   | 0.7 | 1.000 | 0.121 | 0.216 |
 
@@ -228,10 +228,10 @@ The Streamlit app is for interactive one-off lookups. `reposcore_cli.py` does th
 python reposcore_cli.py scikit-learn/scikit-learn pallets/flask
 python reposcore_cli.py --file repos.txt --pretty
 python reposcore_cli.py owner/repo --format csv > scores.csv
-python reposcore_cli.py owner/repo --threshold 0.3   # F1-optimal threshold, see below
+python reposcore_cli.py owner/repo --threshold 0.5   # higher precision, lower recall
 ```
 
-Outputs JSON (default) or CSV (`--format csv`) with `predicted_quality`, `confidence`, `threshold`, and the underlying signal values per repo, and exits non-zero if any repo failed to score. The classification threshold defaults to 0.5 but is adjustable with `--threshold` — see "Known limitations" below for why 0.5 isn't actually the best choice for every use case. The Streamlit app has the same option as a slider.
+Outputs JSON (default) or CSV (`--format csv`) with `predicted_quality`, `confidence`, `threshold`, and the underlying signal values per repo, and exits non-zero if any repo failed to score. The classification threshold defaults to 0.3 (F1-optimal per 5-fold CV) but is adjustable with `--threshold` — see "Known limitations" below for the precision/recall trade-off. The Streamlit app has the same option as a slider.
 
 Without `GITHUB_TOKEN` set, the GitHub API rate-limits at 60 requests/hour — for scoring more than a handful of repos, set the token in `.env` first (the same requirement [`ossf/criticality_score`](https://github.com/ossf/criticality_score), a similar tool from Google/OpenSSF, has for its own CLI).
 

@@ -16,6 +16,16 @@ from unittest.mock import patch, MagicMock, PropertyMock
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
+# Mock Redis for API tests that need it
+@pytest.fixture(autouse=True)
+def mock_redis():
+    """Mock Redis client for tests that don't need real Redis."""
+    import fakeredis
+    fake_redis = fakeredis.FakeRedis(decode_responses=True)
+    with patch('api_server.redis_client', fake_redis):
+        yield fake_redis
+
+
 class TestCacheTTLLogic:
     """Test Redis TTL calculation logic matching the docstring."""
     
@@ -168,15 +178,17 @@ class TestCeleryWorker:
         
         assert callable(analyze_repository_async)
         
-    def test_task_accepts_job_id(self):
-        """Verify task accepts job_id parameter."""
+    def test_task_accepts_owner_repo_token(self):
+        """Verify task accepts owner, repo, token parameters."""
         import inspect
         from workers.celery_worker import analyze_repository_async
         
         sig = inspect.signature(analyze_repository_async)
         params = list(sig.parameters.keys())
         
-        assert "job_id" in params
+        assert "owner" in params
+        assert "repo" in params
+        assert "token" in params
 
 
 class TestAPIThreshold:
