@@ -55,19 +55,21 @@ jobs:
       - name: Check for large files (>5MB outside LFS)
         run: |
           # Get list of files tracked by LFS
-          lfs_tracked=$(git lfs ls-files 2>/dev/null | awk '{print $NF}')
+          lfs_tracked=$(git lfs ls-files --name-only 2>/dev/null | tr '\\' '/')
           # Find large files not in .git, not in build artifacts, not images, and not LFS-tracked
           large_files=""
           while IFS= read -r f; do
+            # Normalize path separators for comparison
+            f_normalized=$(echo "$f" | tr '\\' '/')
             is_lfs=false
             for lfs_file in $lfs_tracked; do
-              if [ "$f" = "$lfs_file" ]; then
+              if [ "$f" = "$lfs_file" ] || [ "$f_normalized" = "$lfs_file" ]; then
                 is_lfs=true
                 break
               fi
             done
             if [ "$is_lfs" = false ]; then
-              large_files="$large_files$f"
+              large_files="$large_files$f "
             fi
           done < <(find . -type f -size +5M ! -path "./.git/*" ! -path "*/site-packages/*" ! -path "*/vendor/*" ! -path "*/venv/*" ! -name "*.png" ! -name "*.jpg" ! -name "*.jpeg" ! -name "*.gif" ! -name "*.svg" ! -name "*.ico")
           if [ -n "$large_files" ]; then
