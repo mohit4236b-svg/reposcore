@@ -45,13 +45,23 @@ jobs:
 
       - name: Wait for Redis
         run: |
-          echo "Redis service is healthy, proceeding with tests"
+          for i in {1..30}; do
+            if redis-cli -h localhost -p 6379 ping 2>/dev/null | grep -q PONG; then
+              echo "Redis is ready"
+              exit 0
+            fi
+            echo "Waiting for Redis... ($i/30)"
+            sleep 1
+          done
+          echo "Redis failed to become ready"
+          exit 1
         shell: bash
 
       - name: Run tests
         run: pytest tests/ -v --tb=long
         env:
           REDIS_URL: redis://localhost:6379/0
+          GITHUB_ACTIONS: "true"
         shell: bash
 
       - name: Check for large files (>5MB outside LFS)
