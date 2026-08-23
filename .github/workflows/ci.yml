@@ -15,11 +15,6 @@ jobs:
         ports:
           - 6379:6379
         options: --entrypoint redis-server
-        # Wait for Redis to be ready
-        healthcheck:
-          interval: 10s
-          timeout: 5s
-          retries: 5
     steps:
       - uses: actions/checkout@v4
 
