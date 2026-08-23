@@ -115,5 +115,18 @@ class DynamicCache:
         return 0
 
 
-# Global cache instance
-cache = DynamicCache()
+# Global cache instance - lazily initialized
+_cache_instance = None
+
+
+def get_cache():
+    """Get the global cache instance, creating it if needed."""
+    global _cache_instance
+    if _cache_instance is None:
+        _cache_instance = DynamicCache()
+    return _cache_instance
+
+
+# For backward compatibility - module-level property doesn't work, use function
+def cache():
+    return get_cache()

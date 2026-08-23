@@ -14,7 +14,7 @@ import redis
 
 # Import our modules
 from scoring_engine import RepoScorer
-from cache_layer import cache
+from cache_layer import get_cache
 from badge_generator import create_badge_response, generate_shields_io_badge_url
 
 app = FastAPI(
@@ -128,14 +128,14 @@ async def get_job_status(job_id: str):
 async def get_repo_score(owner: str, repo: str):
     """Get repository quality score from cache or trigger analysis."""
     cache_key = f"repo:{owner}:{repo}"
-    cached = cache.get(cache_key)
+    cached = get_cache().get(cache_key)
     
     if cached:
         return cached
     
     # Trigger new analysis
     result = await analyze_repo(owner, repo)
-    cache.set(cache_key, result, ttl_seconds=86400)
+    get_cache().set(cache_key, result, ttl_seconds=86400)
     
     return result
 
@@ -148,11 +148,11 @@ async def get_svg_badge(owner: str, repo: str):
     Embeddable in READMEs: `![RepoScore](https://api.yourdomain.com/api/badge/owner/repo)`
     """
     cache_key = f"score:{owner}:{repo}"
-    cached = cache.get(cache_key)
+    cached = get_cache().get(cache_key)
     
     if not cached:
         result = await analyze_repo(owner, repo)
-        cache.set(cache_key, result, ttl_seconds=86400)
+        get_cache().set(cache_key, result, ttl_seconds=86400)
         cached = result
     
     badge_response = create_badge_response(cached)
@@ -168,11 +168,11 @@ async def get_svg_badge(owner: str, repo: str):
 async def get_shields_badge(owner: str, repo: str):
     """Get shields.io compatible badge URL."""
     cache_key = f"score:{owner}:{repo}"
-    cached = cache.get(cache_key)
+    cached = get_cache().get(cache_key)
     
     if not cached:
         result = await analyze_repo(owner, repo)
-        cache.set(cache_key, result, ttl_seconds=86400)
+        get_cache().set(cache_key, result, ttl_seconds=86400)
         cached = result
     
     return {"badge_url": generate_shields_io_badge_url(cached.get("total_score", 0))}
@@ -189,7 +189,7 @@ async def list_recent_jobs(limit: int = 10):
 async def startup_event():
     """Initialize services on startup."""
     print("RepoScore API v2.0 starting up...")
-    print(f"Cache: {cache.redis.connection_pool.connection_kwargs}")
+    print(f"Cache: {get_cache().redis.connection_pool.connection_kwargs}")
 
 
 @app.on_event("shutdown")
