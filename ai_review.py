@@ -76,7 +76,7 @@ def generate_ai_review(
         if len(readme_content) > max_readme_chars:
             readme_for_prompt += f'\n\n[README truncated from {len(readme_content)} to {max_readme_chars} characters]'
         
-                prompt = f"""You are an experienced software engineer reviewing a GitHub repository. Provide a technical assessment of the repository based on its README and observable metrics. Do not use promotional or marketing language. Do not mention the model, prediction, or confidence.
+        prompt = f"""You are an experienced software engineer reviewing a GitHub repository. Provide a technical assessment of the repository based on its README and observable metrics. Do not use promotional or marketing language. Do not mention the model, prediction, or confidence.
 
 Repository: {features.get('full_name', 'Unknown')}
 Stars: {features.get('stars', 0)} | Forks: {features.get('forks', 0)} | Open Issues: {features.get('open_issues', 0)}
