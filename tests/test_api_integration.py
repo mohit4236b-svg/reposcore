@@ -22,8 +22,29 @@ def mock_redis():
     """Mock Redis client for tests that don't need real Redis."""
     import fakeredis
     fake_redis = fakeredis.FakeRedis(decode_responses=True)
+    
+    # Mock both api_server.redis_client and cache_layer.cache
     with patch('api_server.redis_client', fake_redis):
-        yield fake_redis
+        with patch('cache_layer.cache') as mock_cache:
+            # Configure the mock cache to use the fake redis
+            mock_cache.get.return_value = None
+            mock_cache.set.return_value = True
+            mock_cache.set_with_activity_ttl.return_value = True
+            mock_cache.store_etag.return_value = None
+            mock_cache.get_etag.return_value = None
+            mock_cache.delete.return_value = True
+            mock_cache.flush_pattern.return_value = 0
+            # Allow setting actual data on the mock
+            mock_cache._data = {}
+            def mock_set(key, value, ttl_seconds):
+                mock_cache._data[key] = value
+                return True
+            def mock_get(key):
+                return mock_cache._data.get(key)
+            mock_cache.set.side_effect = mock_set
+            mock_cache.get.side_effect = mock_get
+            mock_cache.set_with_activity_ttl.side_effect = mock_set
+            yield fake_redis
 
 
 class TestCacheTTLLogic:
