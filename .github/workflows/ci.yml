@@ -46,7 +46,7 @@ jobs:
       - name: Wait for Redis
         run: |
           for i in {1..30}; do
-            if redis-cli -h redis -p 6379 ping 2>/dev/null | grep -q PONG; then
+            if redis-cli -h 127.0.0.1 -p 6379 ping 2>/dev/null | grep -q PONG; then
               echo "Redis is ready"
               exit 0
             fi
