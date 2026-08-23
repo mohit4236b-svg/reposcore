@@ -1,4 +1,12 @@
--r requirements.txt
+joblib==1.5.3
+numpy==2.5.2
+pandas==3.0.5
+python-dotenv==1.2.3
+requests==2.34.2
+scikit-learn==1.8.0
+scipy==1.18.1
+shap==0.52.0
+streamlit==1.62.0
 pytest==9.1.1
 celery==5.6.3
 fakeredis==2.37.1
