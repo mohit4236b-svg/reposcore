@@ -361,7 +361,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
                         prediction=prediction,
                         probability=probability
                     )
-                    st.markdown(format_ai_review_for_display(ai_result))
+                    st.write(format_ai_review_for_display(ai_result))
                 except Exception as err:
                     st.caption(f"AI review unavailable: {err}")
             else:
