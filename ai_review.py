@@ -1,5 +1,6 @@
 import os
 import logging
+import time
 from typing import Optional, Dict, Any
 
 logger = logging.getLogger(__name__)
@@ -103,11 +104,33 @@ Each sentence must reference THIS repo's actual content. No generic praise; if s
             max_output_tokens=2000,
         )
         
-        response = client.models.generate_content(
-            model='gemini-3.5-flash',
-            contents=prompt,
-            config=generation_config,
-        )
+        # Retry with exponential backoff for rate limits (max 2 retries)
+        max_retries = 2
+        base_delay = 1.0  # seconds
+        
+        for attempt in range(max_retries + 1):
+            try:
+                response = client.models.generate_content(
+                    model='gemini-3.5-flash',
+                    contents=prompt,
+                    config=generation_config,
+                )
+                break  # Success, exit retry loop
+            except Exception as e:
+                error_msg = str(e)
+                is_rate_limit = (
+                    'quota' in error_msg.lower() or 
+                    'rate limit' in error_msg.lower() or 
+                    '429' in error_msg
+                )
+                
+                if is_rate_limit and attempt < max_retries:
+                    delay = base_delay * (2 ** attempt)  # Exponential backoff: 1s, 2s
+                    logger.warning(f'Rate limit hit (attempt {attempt + 1}/{max_retries + 1}), retrying in {delay}s: {error_msg}')
+                    time.sleep(delay)
+                    continue  # Retry
+                else:
+                    raise  # Re-raise if not rate limit or max retries exceeded
         
         if response and response.candidates:
             finish_reason = response.candidates[0].finish_reason

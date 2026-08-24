@@ -22,6 +22,11 @@ except ImportError:
 # Load environment variables
 load_dotenv()
 
+# Wire Streamlit secrets (e.g., GEMINI_API_KEY) into os.environ so downstream modules can use os.getenv()
+import streamlit as st
+if "GEMINI_API_KEY" in st.secrets:
+    os.environ["GEMINI_API_KEY"] = st.secrets["GEMINI_API_KEY"]
+
 # Page configuration
 st.set_page_config(
     page_title="RepoScore",
@@ -372,12 +377,21 @@ if st.button("Predict Quality", type="primary") and repo_input:
             st.subheader("AI Review")
             if AI_REVIEW_AVAILABLE:
                 try:
-                    ai_result = generate_ai_review(
-                        readme_content=features.get("readme_text_clean", ""),
-                        features=features,
-                        prediction=prediction,
-                        probability=probability
-                    )
+                    # Cached AI review to avoid repeated API calls for same repo
+                    @st.cache_data(ttl=86400, show_spinner=False)
+                    def _cached_ai_review(readme_text_clean: str, features_hashable: tuple, prediction: int, probability: float):
+                        # Rebuild features dict from hashable tuple
+                        features_dict = dict(features_hashable)
+                        return generate_ai_review(
+                            readme_content=readme_text_clean,
+                            features=features_dict,
+                            prediction=prediction,
+                            probability=probability
+                        )
+                    
+                    readme_text = features.get("readme_text_clean", "")
+                    features_hashable = tuple(sorted(features.items()))
+                    ai_result = _cached_ai_review(readme_text, features_hashable, prediction, probability)
                     st.write(format_ai_review_for_display(ai_result))
                 except Exception as err:
                     st.caption(f"AI review unavailable: {err}")
