@@ -213,7 +213,23 @@ if st.button("Predict Quality", type="primary") and repo_input:
             n_exceptions = len(exceptions)
             n_low_confidence_reasons = 1 if low_confidence else 0
             total_issues = n_exceptions + n_low_confidence_reasons
-            
+
+            # Calculate heuristic and combined scores early for top-level display
+            try:
+                from scoring_engine import RepoScorer
+                scorer = RepoScorer()
+                heuristic_result = scorer.calculate_score(features)
+                ml_score_pct = probability * 100
+                heuristic_score = heuristic_result['total_score']
+                combined_score = (ml_score_pct + heuristic_score) / 2
+                divergence = abs(ml_score_pct - heuristic_score)
+            except Exception:
+                heuristic_result = None
+                ml_score_pct = probability * 100
+                heuristic_score = None
+                combined_score = None
+                divergence = None
+
             # Display Results UI
             st.subheader(f"Results for [{features['full_name']}]({features['html_url']})")
 
@@ -227,6 +243,16 @@ if st.button("Predict Quality", type="primary") and repo_input:
                 st.write("**Topics:** " + ", ".join([f"`{t}`" for t in topics]))
 
             st.divider()
+
+            # --- Combined Score (prominent, top-level) ---
+            if combined_score is not None:
+                st.subheader("📊 Combined Score")
+                st.write(f"**Combined Score:** {combined_score:.1f}/100  (50% ML Model + 50% Heuristic)")
+                if divergence > 15:
+                    st.write(f"⚠️ ML and Heuristic scores diverge by {divergence:.1f} points — treat this combined score with caution; review both scores individually below.")
+                st.write(f"**ML Model Score:** {ml_score_pct:.1f}%")
+                st.write(f"**Heuristic Score:** {heuristic_score:.1f}/100")
+                st.divider()
 
             # Display confidence report
             st.caption(f"Confidence report: **{probability:.1%}** match rate | {total_issues} exception{'s' if total_issues != 1 else ''} flagged")
@@ -311,31 +337,22 @@ if st.button("Predict Quality", type="primary") and repo_input:
                 st.caption(f"Explanation unavailable: {err}")
 
             # --- Heuristic Score (RepoScorer) Breakdown ---
-            with st.expander("Heuristic Score (RepoScorer)"):
+            with st.expander("Heuristic Score (RepoScorer)", expanded=True):
                 try:
-                    from scoring_engine import RepoScorer
-                    scorer = RepoScorer()
-                    heuristic_result = scorer.calculate_score(features)
+                    # Use pre-calculated heuristic_result from above if available
+                    if 'heuristic_result' not in locals() or heuristic_result is None:
+                        from scoring_engine import RepoScorer
+                        scorer = RepoScorer()
+                        heuristic_result = scorer.calculate_score(features)
                     
-                    # Calculate combined score (50/50 weight of ML probability and heuristic score, both normalized to 0-100)
-                    # Using simple average as both systems provide complementary signals; ML captures complex patterns, heuristic captures interpretable signals
                     ml_score_pct = probability * 100
                     heuristic_score = heuristic_result['total_score']
                     combined_score = (ml_score_pct + heuristic_score) / 2
                     divergence = abs(ml_score_pct - heuristic_score)
-                    
-                    st.subheader("Combined Score")
-                    st.write(f"**Combined Score:** {combined_score:.1f}/100")
-                    if divergence > 15:  # Same threshold as in test_scoring_divergence.py
-                        st.write(f"⚠️ ML and Heuristic scores diverge by {divergence:.1f} points — treat this combined score with caution; review both scores individually below.")
-                    st.write(f"**ML Model Score:** {ml_score_pct:.1f}%")
-                    st.write(f"**Heuristic Score:** {heuristic_score:.1f}/100")
-                    
-                    st.divider()
-                    
-                    # Display key metrics
-                    st.write(f"**Heuristic Score:** {heuristic_score:.1f}/100")
+
+                    st.subheader("Heuristic Score Details")
                     st.write(f"**Tier:** {heuristic_result['tier_emoji']} {heuristic_result['tier']}")
+                    st.write(f"**Heuristic Score:** {heuristic_score:.1f}/100")
                     st.write(f"**Component Scores:** Maintenance: {heuristic_result['components']['maintenance']:.1f}, Community: {heuristic_result['components']['community']:.1f}, Documentation: {heuristic_result['components']['documentation']:.1f}, Contributors: {heuristic_result['components']['contributors']:.1f}")
                     delta = ml_score_pct - heuristic_score
                     st.write(f"**Delta vs ML Model:** {delta:+.1f} points")
