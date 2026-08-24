@@ -120,7 +120,12 @@ def fetch_repo_features(full_name, headers=None):
     has_tests = any(t in topics for t in ["tests", "test", "testing", "pytest", "unittest"])
 
     created_at = pd.to_datetime(repo["created_at"])
-    pushed_at = pd.to_datetime(repo["pushed_at"])
+    pushed_at_raw = repo.get("pushed_at")
+    if pushed_at_raw is None:
+        # Empty repo with no commits - use created_at as fallback, or a large default
+        pushed_at = pd.to_datetime(repo["created_at"])
+    else:
+        pushed_at = pd.to_datetime(pushed_at_raw)
     now = pd.Timestamp.now(tz="UTC")
 
     return {
@@ -133,7 +138,7 @@ def fetch_repo_features(full_name, headers=None):
         "open_issues": repo.get("open_issues_count", 0),
         "readme_size": readme_size,
         "repo_age_days": (now - created_at).days,
-        "last_commit_days": (now - pushed_at).days,
+        "last_commit_days": int((now - pushed_at).days) if pd.notna((now - pushed_at).days) else 9999,
         "has_readme": int(has_readme),
         "has_ci": has_ci or has_pages,
         "has_tests": has_tests,

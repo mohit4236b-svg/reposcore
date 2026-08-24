@@ -81,13 +81,14 @@ def load_explainer(_model):
 def check_exceptions(features):
     """Check for data quality issues that might affect prediction reliability."""
     exceptions = []
-    if features["has_readme"] == 0:
+    if features.get("has_readme", 1) == 0:
         exceptions.append("⚠️ No README detected.")
-    elif features["readme_size"] < 50:
+    elif features.get("readme_size", 0) < 50:
         exceptions.append("⚠️ Very small README (less than 50 characters).")
-    if not features["topics"]:
+    if not features.get("topics"):
         exceptions.append("⚠️ No topics specified.")
-    if features["last_commit_days"] > 730:  # over 2 years
+    last_commit_days = features.get("last_commit_days")
+    if last_commit_days is not None and last_commit_days > 730:  # over 2 years
         exceptions.append("⚠️ No commits in over 2 years.")
     return exceptions
 
