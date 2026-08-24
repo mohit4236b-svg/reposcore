@@ -56,7 +56,7 @@ jobs:
         run: |
           # Get list of files tracked by LFS (just the file paths)
           # Use git lfs ls-files and extract just the filename (last column)
-          lfs_tracked=$(git lfs ls-files 2>/dev/null | awk '{print $1}')
+          lfs_tracked=$(git lfs ls-files 2>/dev/null | awk '{print $NF}')
           
           # Find large files not in .git, not in build artifacts, not images, and not LFS-tracked
           large_files=""
