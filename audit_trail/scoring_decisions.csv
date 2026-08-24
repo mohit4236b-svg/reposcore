@@ -3,3 +3,5 @@ timestamp,repo_id,repo_url,stars,forks,open_issues,readme_size,repo_age_days,day
 2026-08-24T15:29:20.620733,scikit-learn/scikit-learn,https://github.com/scikit-learn/scikit-learn,67043,27307,2129,7676,5851,0,1,5,0.685000,1,0.30
 2026-08-24T15:32:37.201759,scikit-learn/scikit-learn,https://github.com/scikit-learn/scikit-learn,67043,27307,2129,7676,5851,0,1,5,0.685000,1,0.30
 2026-08-24T15:36:24.854793,pre-commit/pre-commit-hooks,https://github.com/pre-commit/pre-commit-hooks,6667,798,6,9208,4546,6,1,5,0.350000,1,0.30
+2026-08-24T18:34:52.765251,mohit4236b-svg/reposcore,https://github.com/mohit4236b-svg/reposcore,2,0,0,21036,34,0,1,0,0.285000,0,0.30
+2026-08-24T18:37:06.439822,razorpay/go-financial,https://github.com/razorpay/go-financial,317,28,15,20097,2084,21,1,0,0.160000,0,0.30
