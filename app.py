@@ -310,6 +310,46 @@ if st.button("Predict Quality", type="primary") and repo_input:
             except Exception as err:
                 st.caption(f"Explanation unavailable: {err}")
 
+            # --- Heuristic Score (RepoScorer) Breakdown ---
+            with st.expander("Heuristic Score (RepoScorer)"):
+                try:
+                    from scoring_engine import RepoScorer
+                    scorer = RepoScorer()
+                    heuristic_result = scorer.calculate_score(features)
+                    
+                    # Display key metrics
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.metric("Heuristic Score", f"{heuristic_result['total_score']}/100")
+                        st.write(f"**Tier:** {heuristic_result['tier_emoji']} {heuristic_result['tier']}")
+                    with col2:
+                        st.write("**Component Scores:**")
+                        comps = heuristic_result['components']
+                        st.write(f"• Maintenance: {comps['maintenance']}/100")
+                        st.write(f"• Community: {comps['community']}/100")
+                        st.write(f"• Documentation: {comps['documentation']}/100")
+                        st.write(f"• Contributors: {comps['contributors']}/100")
+                    
+                    # Show delta vs ML model
+                    ml_score_pct = probability * 100
+                    delta = ml_score_pct - heuristic_result['total_score']
+                    st.write(f"**Delta vs ML Model:** {delta:+.1f} points")
+                    if abs(delta) > 15:
+                        st.caption("⚠️ Large divergence suggests the ML model and heuristic scorer disagree significantly. "
+                                 "This often happens with repos that have strong signals in one system but not the other "
+                                 "(e.g., great code but poor documentation, or vice versa). See README for details.")
+                    else:
+                        st.caption("✅ Scores are well-aligned between ML model and heuristic scorer.")
+                    
+                    # Show explanations
+                    if heuristic_result.get('explanations'):
+                        st.write("**Explanations:**")
+                        for exp in heuristic_result['explanations'][:3]:  # Show top 3
+                            st.write(f"• {exp}")
+                            
+                except Exception as err:
+                    st.caption(f"Heuristic score unavailable: {err}")
+
             # --- AI Review Section ---
             st.divider()
             st.subheader("AI Review")
