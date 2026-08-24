@@ -1,16 +1,16 @@
-repo,stars,forks,age_days,last_commit_days,contributors,has_ci,has_tests,readme_size,ml_score,ml_prediction,ml_probability,heuristic_score,heuristic_tier,heuristic_components,decay_factor,delta
-pre-commit/pre-commit-hooks,6668,798,4547,6,107,False,False,9208,35.0,0,0.35,87.0,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 90.0, 'contributors': 100.0}",1.0,-52.0
-psf/requests,54256,10101,5670,6,402,False,False,2906,38.0,0,0.38,84.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 80.0, 'contributors': 100.0}",1.0,-46.5
-pallets/flask,72148,16947,5984,7,400,False,False,1639,49.5,0,0.495,84.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 80.0, 'contributors': 100.0}",1.0,-35.0
-django/django,88762,34173,5231,0,391,False,False,2179,50.0,0,0.5,84.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 80.0, 'contributors': 100.0}",1.0,-34.5
-pytest-dev/pytest,14441,3320,4087,0,382,False,True,5454,58.5,1,0.585,89.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 100.0, 'contributors': 100.0}",1.0,-31.0
-tiangolo/fastapi,101816,9811,2816,5,457,False,False,22780,75.0,1,0.75,87.0,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 90.0, 'contributors': 100.0}",1.0,-12.0
-encode/httpx,15431,1257,2699,148,230,True,False,4944,60.0,1,0.6,88.0,A,"{'maintenance': 60.0, 'community': 100.0, 'documentation': 100.0, 'contributors': 100.0}",1.0,-28.0
-ansible/ansible,70445,24319,5284,4,372,False,False,6154,59.0,1,0.59,85.75,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 85.0, 'contributors': 100.0}",1.0,-26.75
-kubernetes/kubernetes,124948,43912,4461,3,350,False,False,4387,58.5,1,0.585,84.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 80.0, 'contributors': 100.0}",1.0,-26.0
-golang/go,136207,19298,4388,0,380,False,False,1454,41.0,0,0.41,84.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 80.0, 'contributors': 100.0}",1.0,-43.5
-numpy/numpy,32596,12668,5823,0,439,False,False,4411,58.5,1,0.585,83.25,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 75.0, 'contributors': 100.0}",1.0,-24.75
-scipy/scipy,14950,5879,5646,0,415,False,False,3911,59.5,1,0.595,84.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 80.0, 'contributors': 100.0}",1.0,-25.0
-facebook/react,247689,51248,4839,0,410,True,False,5317,62.0,1,0.62,89.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 100.0, 'contributors': 100.0}",1.0,-27.5
-vuejs/vue,210476,33753,4774,683,354,False,False,7874,66.0,1,0.66,38.25,F,"{'maintenance': 15.0, 'community': 50.0, 'documentation': 45.0, 'contributors': 50.0}",0.5,27.75
-rust-lang/rust,115980,15455,5912,0,443,False,False,3304,66.5,1,0.665,84.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 80.0, 'contributors': 100.0}",1.0,-18.0
+repo,stars,forks,age_days,last_commit_days,contributors,has_ci,has_tests,readme_size,ml_score,ml_prediction,ml_probability,heuristic_score,heuristic_tier,heuristic_components,decay_factor,delta,error
+pre-commit/pre-commit-hooks,6668.0,798.0,4547.0,6.0,107.0,False,False,9208.0,35.0,0.0,0.35,87.0,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 90.0, 'contributors': 100.0}",1.0,-52.0,
+psf/requests,54256.0,10100.0,5671.0,0.0,402.0,False,False,2906.0,39.5,0.0,0.395,84.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 80.0, 'contributors': 100.0}",1.0,-45.0,
+pallets/flask,72147.0,16946.0,5984.0,8.0,400.0,False,False,1639.0,49.0,0.0,0.49,84.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 80.0, 'contributors': 100.0}",1.0,-35.5,
+django/django,88923.0,34172.0,5231.0,0.0,391.0,False,False,2179.0,50.0,0.0,0.5,84.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 80.0, 'contributors': 100.0}",1.0,-34.5,
+pytest-dev/pytest,14441.0,3320.0,4087.0,0.0,382.0,False,True,5454.0,58.5,1.0,0.585,89.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 100.0, 'contributors': 100.0}",1.0,-31.0,
+tiangolo/fastapi,,,,,,,,,,,,,,,,,"HTTPSConnectionPool(host='api.github.com', port=443): Read timed out. (read timeout=None)"
+encode/httpx,15431.0,1257.0,2699.0,148.0,230.0,True,False,4944.0,60.0,1.0,0.6,88.0,A,"{'maintenance': 60.0, 'community': 100.0, 'documentation': 100.0, 'contributors': 100.0}",1.0,-28.0,
+ansible/ansible,70448.0,24320.0,5284.0,5.0,372.0,False,False,6154.0,59.0,1.0,0.59,85.75,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 85.0, 'contributors': 100.0}",1.0,-26.75,
+kubernetes/kubernetes,125104.0,43914.0,4461.0,3.0,350.0,False,False,4387.0,58.5,1.0,0.585,84.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 80.0, 'contributors': 100.0}",1.0,-26.0,
+golang/go,136392.0,19298.0,4388.0,0.0,381.0,False,False,1454.0,41.0,0.0,0.41,84.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 80.0, 'contributors': 100.0}",1.0,-43.5,
+numpy/numpy,32596.0,12671.0,5823.0,0.0,439.0,False,False,4411.0,58.5,1.0,0.585,83.25,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 75.0, 'contributors': 100.0}",1.0,-24.75,
+scipy/scipy,14950.0,5879.0,5647.0,0.0,415.0,False,False,3911.0,59.5,1.0,0.595,84.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 80.0, 'contributors': 100.0}",1.0,-25.0,
+facebook/react,247855.0,51252.0,4840.0,0.0,410.0,True,False,5317.0,62.0,1.0,0.62,89.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 100.0, 'contributors': 100.0}",1.0,-27.5,
+vuejs/vue,210663.0,33752.0,4774.0,683.0,354.0,False,False,7874.0,66.0,1.0,0.66,38.25,F,"{'maintenance': 15.0, 'community': 50.0, 'documentation': 45.0, 'contributors': 50.0}",0.5,27.75,
+rust-lang/rust,116143.0,15455.0,5912.0,0.0,443.0,False,False,3304.0,66.5,1.0,0.665,84.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 80.0, 'contributors': 100.0}",1.0,-18.0,
