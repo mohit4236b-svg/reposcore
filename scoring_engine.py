@@ -19,14 +19,14 @@ class RatingTier:
     color: str
 
 
-# Define rating tiers A+ to F
+# Define rating tiers A+ to F - use continuous ranges without gaps
 RATING_TIERS: List[RatingTier] = [
     RatingTier(90, 100, "A+", "🏆", "#4CAF50"),
-    RatingTier(80, 89, "A", "⭐", "#8BC34A"),
-    RatingTier(70, 79, "B", "👍", "#CDDC39"),
-    RatingTier(60, 69, "C", "👌", "#FF9800"),
-    RatingTier(50, 59, "D", "⚠️", "#FF5722"),
-    RatingTier(0, 49, "F", "❌", "#F44336"),
+    RatingTier(80, 90, "A", "⭐", "#8BC34A"),
+    RatingTier(70, 80, "B", "👍", "#CDDC39"),
+    RatingTier(60, 70, "C", "👌", "#FF9800"),
+    RatingTier(50, 60, "D", "⚠️", "#FF5722"),
+    RatingTier(0, 50, "F", "❌", "#F44336"),
 ]
 
 

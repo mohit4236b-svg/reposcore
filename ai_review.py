@@ -40,7 +40,8 @@ def generate_ai_review(
         'review': '',
         'status': 'error',
         'error_type': None,
-        'error_message': None
+        'error_message': None,
+        'finish_reason': None
     }
     
     if not GENAI_AVAILABLE:
@@ -76,11 +77,11 @@ def generate_ai_review(
         if len(readme_content) > max_readme_chars:
             readme_for_prompt += f'\n\n[README truncated from {len(readme_content)} to {max_readme_chars} characters]'
         
-        prompt = f"""You are an experienced software engineer reviewing a GitHub repository. Provide a technical assessment of the repository based on its README and observable metrics. Do not use promotional or marketing language. Do not mention the model, prediction, or confidence.
+        prompt = f"""You are an experienced software engineer reviewing a GitHub repository. Provide a technical assessment of the repository based on its README and observable metrics. Do not use promotional or marketing language. Do not mention the model, prediction, or confidence. Be direct, specific, and critical where warranted — identify concrete gaps alongside strengths.
 
 Repository: {features.get('full_name', 'Unknown')}
 Stars: {features.get('stars', 0)} | Forks: {features.get('forks', 0)} | Open Issues: {features.get('open_issues', 0)}
-Age: {features.get('repo_age_days', 0)} days | Days since last commit: {features.get('days_since_last_commit', 0)}
+Age: {features.get('repo_age_days', 0)} days | Days since last commit: {features.get('last_commit_days', 0)}
 Contributors: {features.get('total_contributors', 'Unknown')}
 Topics: {', '.join(features.get('topics', [])) or 'None'}
 Has CI: {features.get('has_ci', False)} | Has Tests: {features.get('has_tests', False)}
@@ -90,23 +91,28 @@ README Content:
 {readme_for_prompt}
 
 Write 3-5 sentences covering:
-1. What the README describes (purpose, key features, tech stack, architecture) -- reference specific details
-2. How the observable metrics (stars, activity, contributors, CI/tests presence) align with or contradict the README's claims
-3. 1-2 concrete, actionable gaps to address (e.g., "Add a CONTRIBUTING.md", "Include installation steps in the README", "Set up CI with a badge", "Add code coverage reporting", "Document the API endpoints")
-4. One specific strength and why it lowers risk for adopters
+1. What the README describes (purpose, key features, tech stack, architecture) — reference specific details from the README
+2. How the observable metrics (stars, activity, contributors, CI/tests presence) align with or contradict the README's claims — be explicit about discrepancies
+3. 1-2 concrete, actionable gaps to address (e.g., "Add a CONTRIBUTING.md", "Include installation steps in the README", "Set up CI with a badge", "Add code coverage reporting", "Document the API endpoints") — reference THIS repo's specific missing elements
+4. One specific strength and why it lowers risk for adopters — cite actual evidence from the repo
 
-Each sentence must reference THIS repo's actual content. Be direct, specific, and engineering-focused."""
+Each sentence must reference THIS repo's actual content. No generic praise; if something is missing or weak, state it directly."""
         
         generation_config = types.GenerateContentConfig(
             temperature=0.3,
-            max_output_tokens=1000,
+            max_output_tokens=2000,
         )
         
         response = client.models.generate_content(
-            model='gemini-3.6-flash',
+            model='gemini-3.5-flash',
             contents=prompt,
             config=generation_config,
         )
+        
+        if response and response.candidates:
+            finish_reason = response.candidates[0].finish_reason
+            logger.info(f'AI review finish_reason for {features.get("full_name", "unknown")}: {finish_reason}')
+            result['finish_reason'] = finish_reason
         
         if response and response.text:
             result['review'] = response.text.strip()

@@ -255,3 +255,64 @@ Two existing projects are worth comparing against directly:
 - **[`clayallsopp/readme-score`](https://github.com/clayallsopp/readme-score)** scores README complexity specifically (not the whole repo) with a small heuristic Ruby gem, packaged with a hosted web checker and an HTTP API, plus an example-scores table in its own README. RepoScore's README-only signal is currently folded into the same model as repo metadata rather than broken out as its own score — a possible future split.
 
 What RepoScore currently has that neither of those does: an ML model (vs. a fixed formula) with a documented, honestly-reported accuracy/recall trade-off and a caught-and-fixed leakage bug. What it's missing relative to both: a published dataset of scored repos, and (unlike `readme-score`) a hosted HTTP API beyond the Streamlit UI — `reposcore_cli.py` above is a step toward the former but not the latter.
+
+---
+
+## Authoritative Scorer: ML Model vs Heuristic
+
+**The ML model is the authoritative scorer.** The heuristic scorer (`scoring_engine.RepoScorer`) is supplementary and has known limitations that make it unreliable as a primary quality signal.
+
+### Why the ML model is authoritative
+
+1. **Trained on ground truth labels**: The Random Forest classifier was trained on ~2,200 repositories with a carefully designed quality label (`stars_per_month > median` AND `has_ci OR has_tests`). This label captures *both* community adoption (star velocity) *and* engineering discipline signals.
+
+2. **Uses README content semantically**: The ML model vectorizes README text (TF-IDF, 2000 features) and topic tags (TF-IDF, 500 features), capturing quality signals that a fixed formula cannot: presence of installation docs, contribution guidelines, architecture descriptions, example usage, dependency lists, etc.
+
+3. **Divergence test evidence**: On 15 real-world repositories (FastAPI 101K★, Django 88K★, Flask 72K★, etc.):
+   - **ML scores** range 35–75%, correctly differentiating quality tiers
+   - **Heuristic scores** cluster at 83–89 (tier A) for 13/15 repos, failing to distinguish quality among top-tier projects
+   - **One exception**: vuejs/vue scores **F (38.25)** due to 683 days since last commit — recency dominates the heuristic
+   - **Mean delta: -26.9** (heuristic systematically over-scores most repos; severely under-scores stale ones)
+
+### What the divergence actually reveals
+
+The divergence test exposes two distinct failure modes in the heuristic scorer:
+
+| Failure Mode | Evidence | Root Cause in `scoring_engine.py` |
+|--------------|----------|-----------------------------------|
+| **Over-scoring active repos** | 13/15 repos get tier A (83–89) despite `has_ci=False`, `has_tests=False` for most | `activity` weight (30%) + `community` weight (20%) dominate; `has_ci`/`has_tests` contribute only ~5% each and are often False due to topic-only detection |
+| **Cratering stale repos** | vuejs/vue (210K★) drops to **F (38.25)** solely due to 683 days since last commit | Recency penalty applies a harsh decay; no other dimension can compensate |
+
+The ML model avoids both: it produces a calibrated spread (35–75%) and does not collapse to a single tier.
+
+### Known heuristic failures (confirmed by live data)
+
+| Failure Mode | Root Cause | Impact |
+|--------------|------------|--------|
+| **CI/Tests not detected** | Detection relies only on GitHub *topics* (e.g., `github-actions`, `pytest`), not actual workflow files or test directories | FastAPI, Django, Flask, Requests all show `has_ci: False`, `has_tests: False` despite extensive CI/CD and test suites |
+| **Missing star/ fork weight** | Community dimension caps at 100 points; 10K★ and 100K★ repos get identical community scores | No differentiation between popular and extremely popular projects |
+| **README scoring too generous** | Any README >500 chars gets 75+ points; 20K char READMEs get only 90 | Cannot distinguish minimal vs comprehensive documentation |
+| **Tier boundary bug** | Non-continuous ranges (80–89, 90–100) left 89.5 scoring as F | Fixed in v2.1 but indicates insufficient test coverage |
+| **Recency dominates** | Activity weight (30%) + decay factor overwhelm other signals | Active but CI-less repos score A; stale but popular repos score F |
+
+### When to use each scorer
+
+| Use Case | Recommended Scorer |
+|----------|-------------------|
+| **Production quality prediction** | **ML model** (`app.py`, `reposcore_cli.py`, `/api/score`) |
+| **Quick metadata-only audit** | Heuristic (no API calls needed if you have features) |
+| **Explaining *why* a repo scored low** | Heuristic (component breakdown + human-readable explanations) |
+| **CI/CD gate** | ML model (via `reposcore_cli.py --threshold`) |
+
+### Divergence test as regression guard
+
+The script `test_scoring_divergence.py` runs on every CI build and:
+- Fetches 15 diverse repos (popular frameworks, CLIs, data science libs)
+- Runs both scorers
+- Fails if mean |delta| > 25 or any repo diverges > 50 points
+- **Current baseline**: mean |delta| = 26.9, max = 52.0 (CI fails — this is intentional; the test documents the known gap)
+
+To run manually:
+```bash
+python test_scoring_divergence.py
+```

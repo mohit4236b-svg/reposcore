@@ -1,0 +1,5 @@
+timestamp,repo_id,repo_url,stars,forks,open_issues,readme_size,repo_age_days,days_since_last_commit,has_readme,topics_count,probability,prediction,threshold
+2026-08-24T15:28:13.733478,scikit-learn/scikit-learn,https://github.com/scikit-learn/scikit-learn,67043,27307,2129,7676,5851,0,1,5,0.685000,1,0.30
+2026-08-24T15:29:20.620733,scikit-learn/scikit-learn,https://github.com/scikit-learn/scikit-learn,67043,27307,2129,7676,5851,0,1,5,0.685000,1,0.30
+2026-08-24T15:32:37.201759,scikit-learn/scikit-learn,https://github.com/scikit-learn/scikit-learn,67043,27307,2129,7676,5851,0,1,5,0.685000,1,0.30
+2026-08-24T15:36:24.854793,pre-commit/pre-commit-hooks,https://github.com/pre-commit/pre-commit-hooks,6667,798,6,9208,4546,6,1,5,0.350000,1,0.30

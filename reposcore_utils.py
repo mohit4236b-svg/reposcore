@@ -35,7 +35,7 @@ def strip_badges(text: str) -> str:
 
 
 STRUCTURED_COLS = ["stars", "forks", "open_issues", "readme_size",
-                    "repo_age_days", "days_since_last_commit", "has_readme"]
+                    "repo_age_days", "last_commit_days", "has_readme"]
 
 
 def fetch_repo_features(full_name, headers=None):
@@ -102,7 +102,8 @@ def fetch_repo_features(full_name, headers=None):
             link = contribs_resp.headers.get("Link", "")
             if 'rel="last"' in link:
                 import re
-                match = re.search(r'page=(\d+)', link)
+                # Match the page number specifically from the "last" relation
+                match = re.search(r'page=(\d+)>; rel="last"', link)
                 if match:
                     total_contributors = int(match.group(1))
             else:
@@ -132,7 +133,7 @@ def fetch_repo_features(full_name, headers=None):
         "open_issues": repo.get("open_issues_count", 0),
         "readme_size": readme_size,
         "repo_age_days": (now - created_at).days,
-        "days_since_last_commit": (now - pushed_at).days,
+        "last_commit_days": (now - pushed_at).days,
         "has_readme": int(has_readme),
         "has_ci": has_ci or has_pages,
         "has_tests": has_tests,

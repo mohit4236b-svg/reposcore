@@ -87,7 +87,7 @@ def check_exceptions(features):
         exceptions.append("⚠️ Very small README (less than 50 characters).")
     if not features["topics"]:
         exceptions.append("⚠️ No topics specified.")
-    if features["days_since_last_commit"] > 730:  # over 2 years
+    if features["last_commit_days"] > 730:  # over 2 years
         exceptions.append("⚠️ No commits in over 2 years.")
     return exceptions
 
@@ -122,7 +122,7 @@ def log_audit_trail(features, probability, prediction, threshold):
         "open_issues": features.get("open_issues", 0),
         "readme_size": features.get("readme_size", 0),
         "repo_age_days": features.get("repo_age_days", 0),
-        "days_since_last_commit": features.get("days_since_last_commit", 0),
+        "last_commit_days": features.get("last_commit_days", 0),
         "has_readme": features.get("has_readme", 0),
         "topics_count": len(features.get("topics", [])),
         "probability": f"{probability:.6f}",
@@ -134,7 +134,7 @@ def log_audit_trail(features, probability, prediction, threshold):
     # Define CSV headers
     fieldnames = [
         "timestamp", "repo_id", "repo_url", "stars", "forks", "open_issues",
-        "readme_size", "repo_age_days", "days_since_last_commit", "has_readme",
+        "readme_size", "repo_age_days", "last_commit_days", "has_readme",
         "topics_count", "probability", "prediction", "threshold"
     ]
     
@@ -157,7 +157,7 @@ def log_audit_trail(features, probability, prediction, threshold):
             "open_issues": logged_features["open_issues"],
             "readme_size": logged_features["readme_size"],
             "repo_age_days": logged_features["repo_age_days"],
-            "days_since_last_commit": logged_features["days_since_last_commit"],
+            "last_commit_days": logged_features["last_commit_days"],
             "has_readme": logged_features["has_readme"],
             "topics_count": logged_features["topics_count"],
             "probability": logged_features["probability"],

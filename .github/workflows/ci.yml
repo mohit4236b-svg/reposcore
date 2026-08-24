@@ -52,6 +52,13 @@ jobs:
           GITHUB_ACTIONS: "true"
         shell: bash
 
+      - name: Run scoring divergence test
+        run: python test_scoring_divergence.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        continue-on-error: true
+
       - name: Check for large files (>5MB outside LFS)
         run: |
           # Get list of files tracked by LFS (just the file paths)
