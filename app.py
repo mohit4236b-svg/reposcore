@@ -23,7 +23,6 @@ except ImportError:
 load_dotenv()
 
 # Wire Streamlit secrets (e.g., GEMINI_API_KEY, NVIDIA_API_KEY) into os.environ so downstream modules can use os.getenv()
-import streamlit as st
 if "GEMINI_API_KEY" in st.secrets:
     os.environ["GEMINI_API_KEY"] = st.secrets["GEMINI_API_KEY"]
 if "NVIDIA_API_KEY" in st.secrets:
@@ -35,6 +34,32 @@ st.set_page_config(
     page_icon="⭐",
     layout="wide"
 )
+
+# Custom CSS for consistent accent color and styling
+st.markdown("""
+<style>
+    /* Accent color for section headers */
+    .section-header {
+        color: #00b4d8 !important;
+        font-weight: 600;
+    }
+    /* Combined score styling */
+    .combined-score-container {
+        padding: 1rem;
+        border-radius: 0.5rem;
+        background: linear-gradient(135deg, #1e1e2e 0%, #2a2a3e 100%);
+        border: 1px solid #3a3a4e;
+    }
+    /* Ensure tabs have consistent styling */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 0.5rem;
+    }
+    .stTabs [data-baseweb="tab"] {
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # Configure GitHub API Headers safely
 token = os.getenv("GITHUB_TOKEN")
@@ -240,6 +265,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
             # Display Results UI
             st.subheader(f"Results for [{features['full_name']}]({features['html_url']})")
 
+            # --- Repo Stats (always visible above tabs) ---
             col1, col2, col3, col4 = st.columns(4)
             col1.metric("⭐ Stars", features["stars"])
             col2.metric("🍴 Forks", features["forks"])
@@ -251,23 +277,61 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
             st.divider()
 
-            # --- Combined Score (prominent, top-level) ---
-            if combined_score is not None:
-                st.subheader("📊 Combined Score")
-                st.write(f"**Combined Score:** {combined_score:.1f}/100  (50% ML Model + 50% Heuristic)")
-                if divergence > 15:
-                    st.write(f"⚠️ ML and Heuristic scores diverge by {divergence:.1f} points — treat this combined score with caution; review both scores individually below.")
-                st.write(f"**ML Model Score:** {ml_score_pct:.1f}%")
-                st.write(f"**Heuristic Score:** {heuristic_score:.1f}/100")
-                st.divider()
+            # --- Calculate scores early ---
+            try:
+                from scoring_engine import RepoScorer
+                scorer = RepoScorer()
+                heuristic_result = scorer.calculate_score(features)
+                ml_score_pct = probability * 100
+                heuristic_score = heuristic_result['total_score']
+                combined_score = (ml_score_pct + heuristic_score) / 2
+                divergence = abs(ml_score_pct - heuristic_score)
+            except Exception:
+                heuristic_result = None
+                ml_score_pct = probability * 100
+                heuristic_score = None
+                combined_score = None
+                divergence = None
 
-            # Display confidence report
+            # --- HEADLINE COMBINED SCORE (prominent, with progress bar) ---
+            if combined_score is not None:
+                # Determine color based on score range
+                if combined_score >= 70:
+                    score_color = "green"
+                    score_emoji = "🟢"
+                elif combined_score >= 40:
+                    score_color = "orange"
+                    score_emoji = "🟡"
+                else:
+                    score_color = "red"
+                    score_emoji = "🔴"
+
+                # Main score display
+                st.markdown(f'<h2 class="section-header">📊 Combined Score: {combined_score:.1f}/100 {score_emoji}</h2>', unsafe_allow_html=True)
+                st.progress(int(combined_score), text=f"{combined_score:.1f}% — 50% ML Model + 50% Heuristic")
+
+                # Secondary scores in columns
+                score_col1, score_col2, score_col3 = st.columns(3)
+                with score_col1:
+                    st.metric("ML Model", f"{ml_score_pct:.1f}%")
+                with score_col2:
+                    st.metric("Heuristic", f"{heuristic_score:.1f}/100")
+                with score_col3:
+                    delta = ml_score_pct - heuristic_score
+                    st.metric("Divergence", f"{delta:+.1f}", delta_color="inverse" if abs(delta) > 15 else "normal")
+
+                # Divergence warning
+                if divergence > 15:
+                    st.warning(f"⚠️ ML and Heuristic scores diverge by {divergence:.1f} points — treat this combined score with caution; review both scores individually in the **Why This Score?** tab.")
+
+            # Confidence report & warnings
             st.caption(f"Confidence report: **{probability:.1%}** match rate | {total_issues} exception{'s' if total_issues != 1 else ''} flagged")
             if warning_messages:
                 st.warning("\n\n".join(warning_messages))
 
             st.divider()
 
+            # Prediction badge
             res_col1, res_col2 = st.columns([2, 1])
             with res_col1:
                 if prediction == 1:
@@ -278,70 +342,88 @@ if st.button("Predict Quality", type="primary") and repo_input:
             with res_col2:
                 st.metric("Model Confidence", f"{probability:.1%}")
 
-            # --- Explainability: why did the model say this? ---
-            st.divider()
-            st.subheader("Why this prediction?")
-            try:
-                explainer = load_explainer(rf_model)
-                shap_values = explainer.shap_values(X_dense, check_additivity=False)
+            # --- TABS FOR DETAILED SECTIONS ---
+            tab_overview, tab_why, tab_ai = st.tabs(["📊 Overview", "🔍 Why This Score?", "🤖 AI Review"])
+            # ==================== TAB 1: OVERVIEW ====================
+            with tab_overview:
+                st.markdown("<h3 class=\"section-header\">Repository Overview</h3>", unsafe_allow_html=True)
+                ov_col1, ov_col2 = st.columns(2)
+                with ov_col1:
+                    st.markdown("**Prediction Details**")
+                    st.write(f"• **Threshold used:** {threshold:.2f}")
+                    st.write(f"• **Model probability:** {probability:.1%}")
+                    st.write(f"• **Prediction:** {'High Quality' if prediction == 1 else 'Low Quality / Unmaintained'}")
+                    if combined_score is not None:
+                        st.write(f"• **Combined Score:** {combined_score:.1f}/100")
+                        st.write(f"• **ML Score:** {ml_score_pct:.1f}%")
+                        st.write(f"• **Heuristic Score:** {heuristic_score:.1f}/100")
+                        st.write(f"• **Divergence:** {divergence:.1f} points")
+                with ov_col2:
+                    if heuristic_result:
+                        st.markdown("**Heuristic Breakdown (RepoScorer)**")
+                        st.write(f"• **Tier:** {heuristic_result['tier_emoji']} {heuristic_result['tier']}")
+                        st.write(f"• **Total Score:** {heuristic_score:.1f}/100")
+                        comps = heuristic_result['components']
+                        st.write(f"  - Maintenance: {comps['maintenance']:.1f}")
+                        st.write(f"  - Community: {comps['community']:.1f}")
+                        st.write(f"  - Documentation: {comps['documentation']:.1f}")
+                        st.write(f"  - Contributors: {comps['contributors']:.1f}")
+                        if heuristic_result.get('explanations'):
+                            st.write("**Key Factors:**")
+                            for exp in heuristic_result['explanations'][:4]:
+                                st.write(f"• {exp}")
+                if exceptions or low_confidence:
+                    st.markdown("**Data Quality Notes**")
+                    for exc in exceptions:
+                        st.caption(f"⚠️ {exc}")
+                    if low_confidence:
+                        st.caption("⚠️ Low confidence prediction (probability near 0.5).")
 
-                # Newer shap versions return one ndarray shaped
-                # (n_samples, n_features, n_classes); older versions return a
-                # list of one array per class. Handle both, taking class 1.
-                if isinstance(shap_values, list):
-                    sv = shap_values[1][0]
-                elif np.ndim(shap_values) == 3:
-                    sv = shap_values[0, :, 1]
-                else:
-                    sv = shap_values[0]
-
-                feature_names = (
-                    list(tfidf_readme.get_feature_names_out()) +
-                    list(tfidf_topics.get_feature_names_out()) +
-                    STRUCTURED_COLS
-                )
-                contrib = pd.DataFrame({"feature": feature_names, "shap_value": sv})
-                contrib = contrib[contrib["shap_value"] != 0]
-                top_pos = contrib.sort_values("shap_value", ascending=False).head(6)
-                top_neg = contrib.sort_values("shap_value", ascending=True).head(6)
-
-                # Get the expected value (base rate) for bounded explainability
-                expected_value = explainer.expected_value
-                if isinstance(expected_value, (list, np.ndarray)):
-                    expected_value = np.ravel(expected_value)[-1]
-                expected_value = float(expected_value)
-                
-                # Calculate how features move from base to prediction
-                base_probability = 1 / (1 + np.exp(-expected_value))  # Convert log-odds to probability
-                final_probability = probability
-                  
-                exp_col1, exp_col2, exp_col3 = st.columns([1, 1, 1])
-                with exp_col1:
-                    st.write("**Base expectation:**")
-                    st.write(f"Average model output: {base_probability:.1%}")
-                      
-                with exp_col2:
-                    st.write("**Feature contributions:**")
-                    st.caption("Top features pushing prediction:")
-                      
-                with exp_col3:
-                    st.write("**Final prediction:**")
-                    st.write(f"{final_probability:.1%} probability")
-                      
-                st.write("")  # Spacer
-                  
-                # Show top positive and negative features
-                feat_col1, feat_col2 = st.columns(2)
-                with feat_col1:
-                    st.write("**Pushed toward 'high quality':**")
-                    for _, row in top_pos.iterrows():
-                        st.markdown(f":green[✅ {row['feature']} (+{row['shap_value']:.3f})]")
-                with feat_col2:
-                    st.write("**Pushed toward 'low quality':**")
-                    for _, row in top_neg.iterrows():
-                        st.markdown(f":red[❌ {row['feature']} ({row['shap_value']:.3f})]")
-            except Exception as err:
-                st.caption(f"Explanation unavailable: {err}")
+# ==================== TAB 2: WHY THIS SCORE? ====================
+            with tab_why:
+                st.markdown("<h3 class=\"section-header\">Feature Contribution Analysis (SHAP)</h3>", unsafe_allow_html=True)
+                try:
+                    explainer = load_explainer(rf_model)
+                    shap_values = explainer.shap_values(X_dense, check_additivity=False)
+                    if isinstance(shap_values, list):
+                        sv = shap_values[1][0]
+                    elif np.ndim(shap_values) == 3:
+                        sv = shap_values[0, :, 1]
+                    else:
+                        sv = shap_values[0]
+                    feature_names = (
+                        list(tfidf_readme.get_feature_names_out()) +
+                        list(tfidf_topics.get_feature_names_out()) +
+                        STRUCTURED_COLS
+                    )
+                    contrib = pd.DataFrame({"feature": feature_names, "shap_value": sv})
+                    contrib = contrib[contrib["shap_value"] != 0]
+                    top_pos = contrib.sort_values("shap_value", ascending=False).head(6)
+                    top_neg = contrib.sort_values("shap_value", ascending=True).head(6)
+                    expected_value = explainer.expected_value
+                    if isinstance(expected_value, (list, np.ndarray)):
+                        expected_value = np.ravel(expected_value)[-1]
+                    expected_value = float(expected_value)
+                    base_probability = 1 / (1 + np.exp(-expected_value))
+                    ctx_col1, ctx_col2, ctx_col3 = st.columns(3)
+                    with ctx_col1:
+                        st.metric("Base Expectation", f"{base_probability:.1%}")
+                    with ctx_col2:
+                        st.metric("Final Prediction", f"{probability:.1%}")
+                    with ctx_col3:
+                        st.metric("Shift", f"{probability - base_probability:+.1%}")
+                    st.caption("These reflect word patterns found in the README text and topics, not direct quality judgments.")
+                    feat_col1, feat_col2 = st.columns(2)
+                    with feat_col1:
+                        st.markdown("**Pushed toward High Quality**")
+                        for _, row in top_pos.iterrows():
+                            st.markdown(f":green[✅ {row['feature']} (+{row['shap_value']:.3f})]")
+                    with feat_col2:
+                        st.markdown("**Pushed toward Low Quality**")
+                        for _, row in top_neg.iterrows():
+                            st.markdown(f":red[❌ {row['feature']} ({row['shap_value']:.3f})]")
+                except Exception as err:
+                    st.caption(f"Explanation unavailable: {err}")
 
             # --- Heuristic Score (RepoScorer) Breakdown ---
             with st.expander("Heuristic Score (RepoScorer)", expanded=True):
@@ -351,7 +433,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
                         from scoring_engine import RepoScorer
                         scorer = RepoScorer()
                         heuristic_result = scorer.calculate_score(features)
-                    
+
                     ml_score_pct = probability * 100
                     heuristic_score = heuristic_result['total_score']
                     combined_score = (ml_score_pct + heuristic_score) / 2
@@ -374,28 +456,28 @@ if st.button("Predict Quality", type="primary") and repo_input:
                 except Exception as err:
                     st.caption(f"Heuristic score unavailable: {err}")
 
-            # --- AI Review Section ---
-            st.divider()
-            st.subheader("AI Review")
-            if AI_REVIEW_AVAILABLE:
-                try:
-                    # Cached AI review to avoid repeated API calls for same repo
-                    @st.cache_data(ttl=86400, show_spinner=False)
-                    def _cached_ai_review(readme_text_clean: str, features_hashable: tuple, prediction: int, probability: float):
-                        # Rebuild features dict from hashable tuple
-                        features_dict = dict(features_hashable)
-                        return generate_ai_review(
-                            readme_content=readme_text_clean,
-                            features=features_dict,
-                            prediction=prediction,
-                            probability=probability
-                        )
-                    
-                    readme_text = features.get("readme_text_clean", "")
-                    features_hashable = tuple(sorted(features.items()))
-                    ai_result = _cached_ai_review(readme_text, features_hashable, prediction, probability)
-                    st.write(format_ai_review_for_display(ai_result))
-                except Exception as err:
-                    st.caption(f"AI review unavailable: {err}")
-            else:
-                st.caption("AI review unavailable: ai_review module not found.")
+            # ==================== TAB 3: AI REVIEW ====================
+            with tab_ai:
+                st.markdown("<h3 class=\"section-header\">AI Review</h3>", unsafe_allow_html=True)
+                if AI_REVIEW_AVAILABLE:
+                    try:
+                        # Cached AI review to avoid repeated API calls for same repo
+                        @st.cache_data(ttl=86400, show_spinner=False)
+                        def _cached_ai_review(readme_text_clean: str, features_hashable: tuple, prediction: int, probability: float):
+                            # Rebuild features dict from hashable tuple
+                            features_dict = dict(features_hashable)
+                            return generate_ai_review(
+                                readme_content=readme_text_clean,
+                                features=features_dict,
+                                prediction=prediction,
+                                probability=probability
+                            )
+
+                        readme_text = features.get("readme_text_clean", "")
+                        features_hashable = tuple(sorted(features.items()))
+                        ai_result = _cached_ai_review(readme_text, features_hashable, prediction, probability)
+                        st.write(format_ai_review_for_display(ai_result))
+                    except Exception as err:
+                        st.caption(f"AI review unavailable: {err}")
+                else:
+                    st.caption("AI review unavailable: ai_review module not found.")
