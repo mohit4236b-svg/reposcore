@@ -8,3 +8,4 @@ scipy==1.18.1
 shap==0.52.0
 streamlit==1.62.0
 google-genai==1.8.0
+openai==1.66.2
