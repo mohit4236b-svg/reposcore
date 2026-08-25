@@ -58,8 +58,88 @@ st.markdown("""
         padding: 0.5rem 1rem;
         border-radius: 0.5rem;
     }
+    /* Card component */
+    .rs-card {
+        background-color: #1a1f2e;
+        border: 1px solid #2d3548;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 16px;
+    }
+    .rs-verdict-low {
+        background-color: #3a1f1f;
+        border: 1px solid #c0392b;
+        border-radius: 10px;
+        padding: 16px 20px;
+        margin-bottom: 12px;
+    }
+    .rs-verdict-high {
+        background-color: #1a3a26;
+        border: 1px solid #27ae60;
+        border-radius: 10px;
+        padding: 16px 20px;
+        margin-bottom: 12px;
+    }
+    .rs-note {
+        background-color: #1e2230;
+        border-left: 3px solid #4a5568;
+        border-radius: 4px;
+        padding: 10px 14px;
+        margin-bottom: 8px;
+        color: #9aa5b8;
+        font-size: 0.9em;
+    }
+    .rs-caution {
+        background-color: #2e2a1a;
+        border-left: 3px solid #d4a017;
+        border-radius: 4px;
+        padding: 10px 14px;
+        margin-bottom: 12px;
+        color: #e0c26e;
+    }
+    .rs-component-label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.9em;
+        color: #cbd5e0;
+        margin-bottom: 2px;
+    }
 </style>
 """, unsafe_allow_html=True)
+
+def render_component_bar(label, value, max_value=100):
+    """Renders a labeled progress bar for a single component score."""
+    pct = value / max_value
+    color = "#27ae60" if pct >= 0.7 else "#d4a017" if pct >= 0.4 else "#c0392b"
+    st.markdown(f"""
+    <div class="rs-component-label">
+        <span>{label}</span>
+        <span>{value:.1f}/{max_value}</span>
+    </div>
+    <div style="background-color:#2d3548;border-radius:6px;height:8px;margin-bottom:12px;">
+        <div style="background-color:{color};width:{pct*100}%;height:8px;border-radius:6px;"></div>
+    </div>
+    """, unsafe_allow_html=True)
+
+def render_verdict_banner(prediction, probability):
+    """Renders the main prediction verdict with distinct color, not the generic warning style."""
+    css_class = "rs-verdict-high" if prediction == 1 else "rs-verdict-low"
+    icon = "✅" if prediction == 1 else "⚠️"
+    label = "High Quality Repository" if prediction == 1 else "Low Quality / Unmaintained Repository"
+    st.markdown(f"""
+    <div class="{css_class}">
+        <span style="font-size:1.2em;font-weight:600;">{icon} Predicted: {label}</span>
+        <span style="float:right;font-size:1.1em;">Model Confidence: {probability:.1%}</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+def render_note(text):
+    """Muted neutral style for informational asides like 'No topics specified' — NOT a warning."""
+    st.markdown(f'<div class="rs-note">ℹ️ {text}</div>', unsafe_allow_html=True)
+
+def render_caution(text):
+    """Distinct yellow style reserved ONLY for the genuinely important divergence caution."""
+    st.markdown(f'<div class="rs-caution">⚠️ {text}</div>', unsafe_allow_html=True)
 
 # Configure GitHub API Headers safely
 token = os.getenv("GITHUB_TOKEN")
@@ -306,7 +386,8 @@ if st.button("Predict Quality", type="primary") and repo_input:
                     score_color = "red"
                     score_emoji = "🔴"
 
-                # Main score display
+                # Main score display - wrapped in card
+                st.markdown('<div class="rs-card">', unsafe_allow_html=True)
                 st.markdown(f'<h2 class="section-header">📊 Combined Score: {combined_score:.1f}/100 {score_emoji}</h2>', unsafe_allow_html=True)
                 st.progress(int(combined_score), text=f"{combined_score:.1f}% — 50% ML Model + 50% Heuristic")
 
@@ -320,64 +401,64 @@ if st.button("Predict Quality", type="primary") and repo_input:
                     delta = ml_score_pct - heuristic_score
                     st.metric("Divergence", f"{delta:+.1f}", delta_color="inverse" if abs(delta) > 15 else "normal")
 
-                # Divergence warning
+                # Divergence warning - use render_caution
                 if divergence > 15:
-                    st.warning(f"⚠️ ML and Heuristic scores diverge by {divergence:.1f} points — treat this combined score with caution; review both scores individually in the **Why This Score?** tab.")
+                    render_caution(f"ML and Heuristic scores diverge by {divergence:.1f} points — treat this combined score with caution; review both scores individually in the **Why This Score?** tab.")
+                st.markdown('</div>', unsafe_allow_html=True)
 
-            # Confidence report & warnings
+            # Confidence report & warnings - wrapped in card
+            st.markdown('<div class="rs-card">', unsafe_allow_html=True)
             st.caption(f"Confidence report: **{probability:.1%}** match rate | {total_issues} exception{'s' if total_issues != 1 else ''} flagged")
             if warning_messages:
-                st.warning("\n\n".join(warning_messages))
+                for msg in warning_messages:
+                    render_caution(msg)
+            st.markdown('</div>', unsafe_allow_html=True)
 
             st.divider()
 
-            # Prediction badge
-            res_col1, res_col2 = st.columns([2, 1])
-            with res_col1:
-                if prediction == 1:
-                    st.success("### ✅ Predicted: High Quality Repository")
-                else:
-                    st.warning("### ⚠️ Predicted: Low Quality / Unmaintained Repository")
-
-            with res_col2:
-                st.metric("Model Confidence", f"{probability:.1%}")
+            # Prediction badge - use render_verdict_banner
+            st.markdown('<div class="rs-card">', unsafe_allow_html=True)
+            render_verdict_banner(prediction, probability)
+            st.markdown('</div>', unsafe_allow_html=True)
 
             # --- TABS FOR DETAILED SECTIONS ---
             tab_overview, tab_why, tab_ai = st.tabs(["📊 Overview", "🔍 Why This Score?", "🤖 AI Review"])
             # ==================== TAB 1: OVERVIEW ====================
             with tab_overview:
-                st.markdown("<h3 class=\"section-header\">Repository Overview</h3>", unsafe_allow_html=True)
-                ov_col1, ov_col2 = st.columns(2)
-                with ov_col1:
-                    st.markdown("**Prediction Details**")
-                    st.write(f"• **Threshold used:** {threshold:.2f}")
-                    st.write(f"• **Model probability:** {probability:.1%}")
-                    st.write(f"• **Prediction:** {'High Quality' if prediction == 1 else 'Low Quality / Unmaintained'}")
-                    if combined_score is not None:
-                        st.write(f"• **Combined Score:** {combined_score:.1f}/100")
-                        st.write(f"• **ML Score:** {ml_score_pct:.1f}%")
-                        st.write(f"• **Heuristic Score:** {heuristic_score:.1f}/100")
-                        st.write(f"• **Divergence:** {divergence:.1f} points")
-                with ov_col2:
-                    if heuristic_result:
-                        st.markdown("**Heuristic Breakdown (RepoScorer)**")
-                        st.write(f"• **Tier:** {heuristic_result['tier_emoji']} {heuristic_result['tier']}")
-                        st.write(f"• **Total Score:** {heuristic_score:.1f}/100")
-                        comps = heuristic_result['components']
-                        st.write(f"  - Maintenance: {comps['maintenance']:.1f}")
-                        st.write(f"  - Community: {comps['community']:.1f}")
-                        st.write(f"  - Documentation: {comps['documentation']:.1f}")
-                        st.write(f"  - Contributors: {comps['contributors']:.1f}")
-                        if heuristic_result.get('explanations'):
-                            st.write("**Key Factors:**")
-                            for exp in heuristic_result['explanations'][:4]:
-                                st.write(f"• {exp}")
+                st.markdown('<div class="rs-card">', unsafe_allow_html=True)
+                st.markdown("<h3 class=\"section-header\">📊 Overview</h3>", unsafe_allow_html=True)
+
+                # Repo stats block
+                col1, col2, col3, col4 = st.columns(4)
+                col1.metric("⭐ Stars", features["stars"])
+                col2.metric("🍴 Forks", features["forks"])
+                col3.metric("🐛 Open Issues", features["open_issues"])
+                col4.metric("📅 Age (Days)", repo_age_days)
+
+                if topics:
+                    st.write("**Topics:** " + ", ".join([f"`{t}`" for t in topics]))
+
+                # Threshold, Model probability, Prediction (not the repeated scores)
+                st.write(f"**Threshold used:** 0.5")
+                st.write(f"**Model probability:** {probability:.1%}")
+                st.write(f"**Prediction:** {'High Quality' if prediction == 1 else 'Low Quality / Unmaintained'}")
+
+                # Component scores using progress bars
+                st.markdown("**Component Scores**")
+                render_component_bar("Maintenance", heuristic_result['components']['maintenance'])
+                render_component_bar("Community", heuristic_result['components']['community'])
+                render_component_bar("Documentation", heuristic_result['components']['documentation'])
+                render_component_bar("Contributors", heuristic_result['components']['contributors'])
+
+                # Data Quality Notes
                 if exceptions or low_confidence:
                     st.markdown("**Data Quality Notes**")
                     for exc in exceptions:
-                        st.caption(f"⚠️ {exc}")
+                        render_note(exc)
                     if low_confidence:
-                        st.caption("⚠️ Low confidence prediction (probability near 0.5).")
+                        render_note("Low confidence prediction (probability near 0.5).")
+
+                st.markdown('</div>', unsafe_allow_html=True)
 
 # ==================== TAB 2: WHY THIS SCORE? ====================
             with tab_why:
@@ -439,20 +520,29 @@ if st.button("Predict Quality", type="primary") and repo_input:
                     combined_score = (ml_score_pct + heuristic_score) / 2
                     divergence = abs(ml_score_pct - heuristic_score)
 
+                    st.markdown('<div class="rs-card">', unsafe_allow_html=True)
                     st.subheader("Heuristic Score Details")
                     st.write(f"**Tier:** {heuristic_result['tier_emoji']} {heuristic_result['tier']}")
                     st.write(f"**Heuristic Score:** {heuristic_score:.1f}/100")
-                    st.write(f"**Component Scores:** Maintenance: {heuristic_result['components']['maintenance']:.1f}, Community: {heuristic_result['components']['community']:.1f}, Documentation: {heuristic_result['components']['documentation']:.1f}, Contributors: {heuristic_result['components']['contributors']:.1f}")
+                    
+                    # Component scores using progress bars
+                    st.markdown("**Component Scores**")
+                    render_component_bar("Maintenance", heuristic_result['components']['maintenance'])
+                    render_component_bar("Community", heuristic_result['components']['community'])
+                    render_component_bar("Documentation", heuristic_result['components']['documentation'])
+                    render_component_bar("Contributors", heuristic_result['components']['contributors'])
+                    
                     delta = ml_score_pct - heuristic_score
                     st.write(f"**Delta vs ML Model:** {delta:+.1f} points")
                     if abs(delta) > 15:
-                        st.caption("⚠️ Large divergence between ML and heuristic scores suggests the repo has contrasting strengths (e.g., great code but poor documentation, or vice versa). See README for details.")
+                        render_caution(f"ML and Heuristic scores diverge by {abs(delta):.1f} points — treat this combined score with caution; review both scores individually in the Why This Score? tab.")
                     else:
                         st.caption("✅ Scores are well-aligned between ML model and heuristic scorer.")
                     if heuristic_result.get('explanations'):
                         st.write("**Explanations:**")
                         for exp in heuristic_result['explanations'][:3]:  # Show top 3
                             st.write(f"• {exp}")
+                    st.markdown('</div>', unsafe_allow_html=True)
                 except Exception as err:
                     st.caption(f"Heuristic score unavailable: {err}")
 
