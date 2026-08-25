@@ -14,8 +14,8 @@ def N(r,f,p,pr):
     k=os.getenv("NVIDIA_API_KEY")
     if not k or k.strip()=="":return{"review":"AI review unavailable: NVIDIA_API_KEY not set.","status":"skipped","provider":"nvidia"}
     m=8000
-    rp=f[:m]
-    if len(f)>m:rp+="\n\n[README truncated from "+str(len(f))+" to "+str(m)+" chars]"
+    rp=r[:m]
+    if len(r)>m:rp+="\n\n[README truncated from "+str(len(r))+" to "+str(m)+" chars]"
     pt=P.format(full_name=f.get("full_name","Unknown"),stars=f.get("stars",0),forks=f.get("forks",0),open_issues=f.get("open_issues",0),repo_age_days=f.get("repo_age_days",0),last_commit_days=f.get("last_commit_days",0),total_contributors=f.get("total_contributors",0),topics=", ".join(f.get("topics",[])) if f.get("topics") else "None",primary_language=f.get("primary_language","Unknown"),has_ci="Yes" if f.get("has_ci") else "No",has_tests="Yes" if f.get("has_tests") else "No",has_license="Yes" if f.get("has_license") else "No",readme_size=f.get("readme_size",0),readme_for_prompt=rp)
     try:
         c=OpenAI(base_url="https://integrate.api.nvidia.com/v1",api_key=k)
@@ -28,8 +28,8 @@ def g_(r,f,p,pr):
     k=os.getenv("GEMINI_API_KEY")
     if not k or k.strip()=="":return{"review":"AI review unavailable: GEMINI_API_KEY not set.","status":"skipped","provider":"gemini"}
     m=8000
-    rp=f[:m]
-    if len(f)>m:rp+="\n\n[README truncated from "+str(len(f))+" to "+str(m)+" chars]"
+    rp=r[:m]
+    if len(r)>m:rp+="\n\n[README truncated from "+str(len(r))+" to "+str(m)+" chars]"
     pt=P.format(full_name=f.get("full_name","Unknown"),stars=f.get("stars",0),forks=f.get("forks",0),open_issues=f.get("open_issues",0),repo_age_days=f.get("repo_age_days",0),last_commit_days=f.get("last_commit_days",0),total_contributors=f.get("total_contributors",0),topics=", ".join(f.get("topics",[])) if f.get("topics") else "None",primary_language=f.get("primary_language","Unknown"),has_ci="Yes" if f.get("has_ci") else "No",has_tests="Yes" if f.get("has_tests") else "No",has_license="Yes" if f.get("has_license") else "No",readme_size=f.get("readme_size",0),readme_for_prompt=rp)
     try:
         c=genai.Client(api_key=k)
