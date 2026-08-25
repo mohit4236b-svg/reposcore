@@ -141,6 +141,11 @@ def render_caution(text):
     """Distinct yellow style reserved ONLY for the genuinely important divergence caution."""
     st.markdown(f'<div class="rs-caution">⚠️ {text}</div>', unsafe_allow_html=True)
 
+
+def render_card(content_html):
+    """Render a complete card with rs-card styling. All content must be HTML."""
+    st.markdown(f'<div class="rs-card">{content_html}</div>', unsafe_allow_html=True)
+
 # Configure GitHub API Headers safely
 token = os.getenv("GITHUB_TOKEN")
 headers = {"Accept": "application/vnd.github+json"}
@@ -387,78 +392,123 @@ if st.button("Predict Quality", type="primary") and repo_input:
                     score_emoji = "🔴"
 
                 # Main score display - wrapped in card
-                st.markdown('<div class="rs-card">', unsafe_allow_html=True)
-                st.markdown(f'<h2 class="section-header">📊 Combined Score: {combined_score:.1f}/100 {score_emoji}</h2>', unsafe_allow_html=True)
-                st.progress(int(combined_score), text=f"{combined_score:.1f}% — 50% ML Model + 50% Heuristic")
-
-                # Secondary scores in columns
-                score_col1, score_col2, score_col3 = st.columns(3)
-                with score_col1:
-                    st.metric("ML Model", f"{ml_score_pct:.1f}%")
-                with score_col2:
-                    st.metric("Heuristic", f"{heuristic_score:.1f}/100")
-                with score_col3:
-                    delta = ml_score_pct - heuristic_score
-                    st.metric("Divergence", f"{delta:+.1f}", delta_color="inverse" if abs(delta) > 15 else "normal")
-
-                # Divergence warning - use render_caution
+                # Build HTML content for the card (Streamlit native elements render as siblings, not children)
+                score_card_html = f'''
+                <h2 class="section-header">📊 Combined Score: {combined_score:.1f}/100 {score_emoji}</h2>
+                <div style="margin-bottom: 1rem;">
+                    <div style="background-color: #2d3548; border-radius: 6px; height: 20px; overflow: hidden;">
+                        <div style="background-color: {score_color}; width: {combined_score}%; height: 100%; border-radius: 6px; transition: width 0.3s ease;"></div>
+                    </div>
+                    <div style="font-size: 0.9em; color: #cbd5e0; margin-top: 0.5rem;">{combined_score:.1f}% — 50% ML Model + 50% Heuristic</div>
+                </div>
+                <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                    <div style="flex: 1; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;">
+                        <div style="font-size: 0.85em; color: #94a3b8;">ML Model</div>
+                        <div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{ml_score_pct:.1f}%</div>
+                    </div>
+                    <div style="flex: 1; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;">
+                        <div style="font-size: 0.85em; color: #94a3b8;">Heuristic</div>
+                        <div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{heuristic_score:.1f}/100</div>
+                    </div>
+                    <div style="flex: 1; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;">
+                        <div style="font-size: 0.85em; color: #94a3b8;">Divergence</div>
+                        <div style="font-size: 1.5em; font-weight: 600; color: {"#f87171" if abs(delta) > 15 else "#e2e8f0"};">{delta:+.1f}</div>
+                    </div>
+                </div>
+                '''
+                # Handle divergence warning separately (renders as caution box)
+                if divergence > 15:
+                    # We'll add the caution to the card HTML
+                    pass  # render_caution will be called separately after the card
+                render_card(score_card_html)
+                # Divergence warning - use render_caution (outside the card)
                 if divergence > 15:
                     render_caution(f"ML and Heuristic scores diverge by {divergence:.1f} points — treat this combined score with caution; review both scores individually in the **Why This Score?** tab.")
-                st.markdown('</div>', unsafe_allow_html=True)
 
             # Confidence report & warnings - wrapped in card
-            st.markdown('<div class="rs-card">', unsafe_allow_html=True)
-            st.caption(f"Confidence report: **{probability:.1%}** match rate | {total_issues} exception{'s' if total_issues != 1 else ''} flagged")
+            confidence_html = f'<div style="font-size: 0.95em; color: #cbd5e0;">Confidence report: <strong>{probability:.1%}</strong> match rate | {total_issues} exception{"s" if total_issues != 1 else ""} flagged</div>'
+            render_card(confidence_html)
+            # Warnings render separately as caution/note boxes
             if warning_messages:
                 for msg in warning_messages:
                     render_caution(msg)
-            st.markdown('</div>', unsafe_allow_html=True)
 
             st.divider()
 
-            # Prediction badge - use render_verdict_banner
-            st.markdown('<div class="rs-card">', unsafe_allow_html=True)
+            # Prediction badge - use render_verdict_banner (already renders its own styled div)
             render_verdict_banner(prediction, probability)
-            st.markdown('</div>', unsafe_allow_html=True)
 
             # --- TABS FOR DETAILED SECTIONS ---
             tab_overview, tab_why, tab_ai = st.tabs(["📊 Overview", "🔍 Why This Score?", "🤖 AI Review"])
             # ==================== TAB 1: OVERVIEW ====================
             with tab_overview:
-                st.markdown('<div class="rs-card">', unsafe_allow_html=True)
-                st.markdown("<h3 class=\"section-header\">📊 Overview</h3>", unsafe_allow_html=True)
-
-                # Repo stats block
-                col1, col2, col3, col4 = st.columns(4)
-                col1.metric("⭐ Stars", features["stars"])
-                col2.metric("🍴 Forks", features["forks"])
-                col3.metric("🐛 Open Issues", features["open_issues"])
-                col4.metric("📅 Age (Days)", repo_age_days)
-
+                # Build overview card content as HTML (Streamlit native elements render as siblings)
+                topics_html = ""
                 if topics:
-                    st.write("**Topics:** " + ", ".join([f"`{t}`" for t in topics]))
+                    topics_html = f'<div style="margin-top: 0.5rem; color: #cbd5e0;"><strong>Topics:</strong> {", ".join([f"`{t}`" for t in topics])}</div>'
 
-                # Threshold, Model probability, Prediction (not the repeated scores)
-                st.write(f"**Threshold used:** 0.5")
-                st.write(f"**Model probability:** {probability:.1%}")
-                st.write(f"**Prediction:** {'High Quality' if prediction == 1 else 'Low Quality / Unmaintained'}")
+                # Component scores as HTML using render_component_bar style
+                components = heuristic_result['components']
+                component_bars_html = ""
+                for label, value in [("Maintenance", components['maintenance']), ("Community", components['community']), 
+                                     ("Documentation", components['documentation']), ("Contributors", components['contributors'])]:
+                    pct = value / 100
+                    color = "#27ae60" if pct >= 0.7 else "#d4a017" if pct >= 0.4 else "#c0392b"
+                    component_bars_html += f'''
+                    <div style="margin-bottom: 12px;">
+                        <div class="rs-component-label">
+                            <span>{label}</span>
+                            <span>{value:.1f}/100</span>
+                        </div>
+                        <div style="background-color:#2d3548;border-radius:6px;height:8px;">
+                            <div style="background-color:{color};width:{pct*100}%;height:8px;border-radius:6px;"></div>
+                        </div>
+                    </div>
+                    '''
 
-                # Component scores using progress bars
-                st.markdown("**Component Scores**")
-                render_component_bar("Maintenance", heuristic_result['components']['maintenance'])
-                render_component_bar("Community", heuristic_result['components']['community'])
-                render_component_bar("Documentation", heuristic_result['components']['documentation'])
-                render_component_bar("Contributors", heuristic_result['components']['contributors'])
-
-                # Data Quality Notes
+                # Data quality notes as HTML
+                data_quality_html = ""
                 if exceptions or low_confidence:
-                    st.markdown("**Data Quality Notes**")
+                    notes = []
                     for exc in exceptions:
-                        render_note(exc)
+                        notes.append(f'<div class="rs-note">ℹ️ {exc}</div>')
                     if low_confidence:
-                        render_note("Low confidence prediction (probability near 0.5).")
+                        notes.append('<div class="rs-note">ℹ️ Low confidence prediction (probability near 0.5).</div>')
+                    data_quality_html = f'<div style="margin-top: 1rem;"><strong>Data Quality Notes</strong>{"".join(notes)}</div>'
 
-                st.markdown('</div>', unsafe_allow_html=True)
+                overview_card_html = f'''
+                <h3 class="section-header">📊 Overview</h3>
+                <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 120px; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;">
+                        <div style="font-size: 0.85em; color: #94a3b8;">⭐ Stars</div>
+                        <div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{features["stars"]}</div>
+                    </div>
+                    <div style="flex: 1; min-width: 120px; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;">
+                        <div style="font-size: 0.85em; color: #94a3b8;">🍴 Forks</div>
+                        <div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{features["forks"]}</div>
+                    </div>
+                    <div style="flex: 1; min-width: 120px; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;">
+                        <div style="font-size: 0.85em; color: #94a3b8;">🐛 Open Issues</div>
+                        <div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{features["open_issues"]}</div>
+                    </div>
+                    <div style="flex: 1; min-width: 120px; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;">
+                        <div style="font-size: 0.85em; color: #94a3b8;">📅 Age (Days)</div>
+                        <div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{repo_age_days}</div>
+                    </div>
+                </div>
+                {topics_html}
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #2d3548;">
+                    <div style="font-size: 0.95em; color: #cbd5e0; margin-bottom: 0.5rem;"><strong>Threshold used:</strong> 0.5</div>
+                    <div style="font-size: 0.95em; color: #cbd5e0; margin-bottom: 0.5rem;"><strong>Model probability:</strong> {probability:.1%}</div>
+                    <div style="font-size: 0.95em; color: #cbd5e0; margin-bottom: 1rem;"><strong>Prediction:</strong> {"High Quality" if prediction == 1 else "Low Quality / Unmaintained"}</div>
+                </div>
+                <div style="margin-top: 1rem;">
+                    <strong style="color: #e2e8f0;">Component Scores</strong>
+                    {component_bars_html}
+                </div>
+                {data_quality_html}
+                '''
+                render_card(overview_card_html)
 
 # ==================== TAB 2: WHY THIS SCORE? ====================
             with tab_why:
