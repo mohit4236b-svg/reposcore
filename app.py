@@ -412,7 +412,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
                     </div>
                     <div style="flex: 1; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;">
                         <div style="font-size: 0.85em; color: #94a3b8;">Divergence</div>
-                        <div style="font-size: 1.5em; font-weight: 600; color: {"#f87171" if abs(delta) > 15 else "#e2e8f0"};">{delta:+.1f}</div>
+                        <div style="font-size: 1.5em; font-weight: 600; color: {'#f87171' if abs(divergence) > 15 else '#e2e8f0'};">{divergence:+.1f}</div>
                     </div>
                 </div>
                 '''
