@@ -22,10 +22,12 @@ except ImportError:
 # Load environment variables
 load_dotenv()
 
-# Wire Streamlit secrets (e.g., GEMINI_API_KEY) into os.environ so downstream modules can use os.getenv()
+# Wire Streamlit secrets (e.g., GEMINI_API_KEY, NVIDIA_API_KEY) into os.environ so downstream modules can use os.getenv()
 import streamlit as st
 if "GEMINI_API_KEY" in st.secrets:
     os.environ["GEMINI_API_KEY"] = st.secrets["GEMINI_API_KEY"]
+if "NVIDIA_API_KEY" in st.secrets:
+    os.environ["NVIDIA_API_KEY"] = st.secrets["NVIDIA_API_KEY"]
 
 # Page configuration
 st.set_page_config(
