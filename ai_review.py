@@ -33,7 +33,7 @@ def g_(r,f,p,pr):
     pt=P.format(full_name=f.get("full_name","Unknown"),stars=f.get("stars",0),forks=f.get("forks",0),open_issues=f.get("open_issues",0),repo_age_days=f.get("repo_age_days",0),last_commit_days=f.get("last_commit_days",0),total_contributors=f.get("total_contributors",0),topics=", ".join(f.get("topics",[])) if f.get("topics") else "None",primary_language=f.get("primary_language","Unknown"),has_ci="Yes" if f.get("has_ci") else "No",has_tests="Yes" if f.get("has_tests") else "No",has_license="Yes" if f.get("has_license") else "No",readme_size=f.get("readme_size",0),readme_for_prompt=rp)
     try:
         c=genai.Client(api_key=k)
-        resp=c.models.generate_content(model="gemini-2.0-flash",contents=pt,config=types.GenerateContentConfig(temperature=0.3,max_output_tokens=500))
+        resp=c.models.generate_content(model="gemini-3.6-flash",contents=pt,config=types.GenerateContentConfig(temperature=0.3,max_output_tokens=500))
         if resp.text:return{"review":resp.text.strip(),"status":"success","provider":"gemini"}
         else:return{"review":"AI review unavailable: Empty response.","status":"error","provider":"gemini"}
     except Exception as e:return{"review":"AI review unavailable: "+str(e),"status":"error","provider":"gemini"}
