@@ -145,7 +145,7 @@ def render_caution(text):
 
 def render_card(content_html):
     """Render a complete card with rs-card styling. All content must be HTML."""
-    st.markdown(f'<div class="rs-card">{textwrap.dedent(content_html)}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="rs-card">{content_html}</div>', unsafe_allow_html=True)
 
 # Configure GitHub API Headers safely
 token = os.getenv("GITHUB_TOKEN")
@@ -394,29 +394,27 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
                 # Main score display - wrapped in card
                 # Build HTML content for the card (Streamlit native elements render as siblings, not children)
-                score_card_html = f'''
-                <h2 class="section-header">📊 Combined Score: {combined_score:.1f}/100 {score_emoji}</h2>
-                <div style="margin-bottom: 1rem;">
-                    <div style="background-color: #2d3548; border-radius: 6px; height: 20px; overflow: hidden;">
-                        <div style="background-color: {score_color}; width: {combined_score}%; height: 100%; border-radius: 6px; transition: width 0.3s ease;"></div>
-                    </div>
-                    <div style="font-size: 0.9em; color: #cbd5e0; margin-top: 0.5rem;">{combined_score:.1f}% — 50% ML Model + 50% Heuristic</div>
-                </div>
-                <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-                    <div style="flex: 1; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;">
-                        <div style="font-size: 0.85em; color: #94a3b8;">ML Model</div>
-                        <div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{ml_score_pct:.1f}%</div>
-                    </div>
-                    <div style="flex: 1; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;">
-                        <div style="font-size: 0.85em; color: #94a3b8;">Heuristic</div>
-                        <div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{heuristic_score:.1f}/100</div>
-                    </div>
-                    <div style="flex: 1; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;">
-                        <div style="font-size: 0.85em; color: #94a3b8;">Divergence</div>
-                        <div style="font-size: 1.5em; font-weight: 600; color: {'#f87171' if abs(divergence) > 15 else '#e2e8f0'};">{divergence:+.1f}</div>
-                    </div>
-                </div>
-                '''
+                score_card_html = f'''<h2 class="section-header">📊 Combined Score: {combined_score:.1f}/100 {score_emoji}</h2>
+<div style="margin-bottom: 1rem;">
+    <div style="background-color: #2d3548; border-radius: 6px; height: 20px; overflow: hidden;">
+        <div style="background-color: {score_color}; width: {combined_score}%; height: 100%; border-radius: 6px; transition: width 0.3s ease;"></div>
+    </div>
+    <div style="font-size: 0.9em; color: #cbd5e0; margin-top: 0.5rem;">{combined_score:.1f}% — 50% ML Model + 50% Heuristic</div>
+</div>
+<div style="display: flex; gap: 1rem; margin-top: 1rem;">
+    <div style="flex: 1; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;">
+        <div style="font-size: 0.85em; color: #94a3b8;">ML Model</div>
+        <div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{ml_score_pct:.1f}%</div>
+    </div>
+    <div style="flex: 1; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;">
+        <div style="font-size: 0.85em; color: #94a3b8;">Heuristic</div>
+        <div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{heuristic_score:.1f}/100</div>
+    </div>
+    <div style="flex: 1; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;">
+        <div style="font-size: 0.85em; color: #94a3b8;">Divergence</div>
+        <div style="font-size: 1.5em; font-weight: 600; color: {'#f87171' if abs(divergence) > 15 else '#e2e8f0'};">{divergence:+.1f}</div>
+    </div>
+</div>'''
                 # Handle divergence warning separately (renders as caution box)
                 if divergence > 15:
                     # We'll add the caution to the card HTML
@@ -455,17 +453,15 @@ if st.button("Predict Quality", type="primary") and repo_input:
                                      ("Documentation", components['documentation']), ("Contributors", components['contributors'])]:
                     pct = value / 100
                     color = "#27ae60" if pct >= 0.7 else "#d4a017" if pct >= 0.4 else "#c0392b"
-                    component_bars_html += textwrap.dedent(f'''
-                    <div style="margin-bottom: 12px;">
-                        <div class="rs-component-label">
-                            <span>{label}</span>
-                            <span>{value:.1f}/100</span>
-                        </div>
-                        <div style="background-color:#2d3548;border-radius:6px;height:8px;">
-                            <div style="background-color:{color};width:{pct*100}%;height:8px;border-radius:6px;"></div>
-                        </div>
-                    </div>
-                    ''')
+                    component_bars_html += f'''<div style="margin-bottom: 12px;">
+    <div class="rs-component-label">
+        <span>{label}</span>
+        <span>{value:.1f}/100</span>
+    </div>
+    <div style="background-color:#2d3548;border-radius:6px;height:8px;">
+        <div style="background-color:{color};width:{pct*100}%;height:8px;border-radius:6px;"></div>
+    </div>
+</div>'''
 
                 # Data quality notes as HTML
                 data_quality_html = ""
@@ -477,38 +473,36 @@ if st.button("Predict Quality", type="primary") and repo_input:
                         notes.append('<div class="rs-note">ℹ️ Low confidence prediction (probability near 0.5).</div>')
                     data_quality_html = f'<div style="margin-top: 1rem;"><strong>Data Quality Notes</strong>{"".join(notes)}</div>'
 
-                overview_card_html = f'''
-                <h3 class="section-header">📊 Overview</h3>
-                <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
-                    <div style="flex: 1; min-width: 120px; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;">
-                        <div style="font-size: 0.85em; color: #94a3b8;">⭐ Stars</div>
-                        <div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{features["stars"]}</div>
-                    </div>
-                    <div style="flex: 1; min-width: 120px; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;">
-                        <div style="font-size: 0.85em; color: #94a3b8;">🍴 Forks</div>
-                        <div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{features["forks"]}</div>
-                    </div>
-                    <div style="flex: 1; min-width: 120px; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;">
-                        <div style="font-size: 0.85em; color: #94a3b8;">🐛 Open Issues</div>
-                        <div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{features["open_issues"]}</div>
-                    </div>
-                    <div style="flex: 1; min-width: 120px; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;">
-                        <div style="font-size: 0.85em; color: #94a3b8;">📅 Age (Days)</div>
-                        <div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{repo_age_days}</div>
-                    </div>
-                </div>
-                {topics_html}
-                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #2d3548;">
-                    <div style="font-size: 0.95em; color: #cbd5e0; margin-bottom: 0.5rem;"><strong>Threshold used:</strong> 0.5</div>
-                    <div style="font-size: 0.95em; color: #cbd5e0; margin-bottom: 0.5rem;"><strong>Model probability:</strong> {probability:.1%}</div>
-                    <div style="font-size: 0.95em; color: #cbd5e0; margin-bottom: 1rem;"><strong>Prediction:</strong> {"High Quality" if prediction == 1 else "Low Quality / Unmaintained"}</div>
-                </div>
-                <div style="margin-top: 1rem;">
-                    <strong style="color: #e2e8f0;">Component Scores</strong>
-                    {component_bars_html}
-                </div>
-                {data_quality_html}
-                '''
+                overview_card_html = f'''<h3 class="section-header">📊 Overview</h3>
+<div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
+    <div style="flex: 1; min-width: 120px; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;">
+        <div style="font-size: 0.85em; color: #94a3b8;">⭐ Stars</div>
+        <div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{features["stars"]}</div>
+    </div>
+    <div style="flex: 1; min-width: 120px; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;">
+        <div style="font-size: 0.85em; color: #94a3b8;">🍴 Forks</div>
+        <div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{features["forks"]}</div>
+    </div>
+    <div style="flex: 1; min-width: 120px; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;">
+        <div style="font-size: 0.85em; color: #94a3b8;">🐛 Open Issues</div>
+        <div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{features["open_issues"]}</div>
+    </div>
+    <div style="flex: 1; min-width: 120px; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;">
+        <div style="font-size: 0.85em; color: #94a3b8;">📅 Age (Days)</div>
+        <div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{repo_age_days}</div>
+    </div>
+</div>
+{topics_html}
+<div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #2d3548;">
+    <div style="font-size: 0.95em; color: #cbd5e0; margin-bottom: 0.5rem;"><strong>Threshold used:</strong> 0.5</div>
+    <div style="font-size: 0.95em; color: #cbd5e0; margin-bottom: 0.5rem;"><strong>Model probability:</strong> {probability:.1%}</div>
+    <div style="font-size: 0.95em; color: #cbd5e0; margin-bottom: 1rem;"><strong>Prediction:</strong> {"High Quality" if prediction == 1 else "Low Quality / Unmaintained"}</div>
+</div>
+<div style="margin-top: 1rem;">
+    <strong style="color: #e2e8f0;">Component Scores</strong>
+    {component_bars_html}
+</div>
+{data_quality_html}'''
                 render_card(overview_card_html)
 
 # ==================== TAB 2: WHY THIS SCORE? ====================
