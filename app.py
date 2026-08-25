@@ -616,7 +616,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
                         readme_text = features.get("readme_text_clean", "")
                         features_hashable = tuple(sorted(features.items()))
                         ai_result = _cached_ai_review(readme_text, features_hashable, prediction, probability)
-                        st.write(format_ai_review_for_display(ai_result))
+                        st.markdown(format_ai_review_for_display(ai_result), unsafe_allow_html=True)
                     except Exception as err:
                         st.caption(f"AI review unavailable: {err}")
                 else:
