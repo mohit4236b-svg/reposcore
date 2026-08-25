@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import requests
 import streamlit as st
+import textwrap
 from dotenv import load_dotenv
 from scipy.sparse import hstack
 
@@ -111,7 +112,7 @@ def render_component_bar(label, value, max_value=100):
     """Renders a labeled progress bar for a single component score."""
     pct = value / max_value
     color = "#27ae60" if pct >= 0.7 else "#d4a017" if pct >= 0.4 else "#c0392b"
-    st.markdown(f"""
+    st.markdown(textwrap.dedent(f"""
     <div class="rs-component-label">
         <span>{label}</span>
         <span>{value:.1f}/{max_value}</span>
@@ -119,22 +120,22 @@ def render_component_bar(label, value, max_value=100):
     <div style="background-color:#2d3548;border-radius:6px;height:8px;margin-bottom:12px;">
         <div style="background-color:{color};width:{pct*100}%;height:8px;border-radius:6px;"></div>
     </div>
-    """, unsafe_allow_html=True)
+    """), unsafe_allow_html=True)
 
 def render_verdict_banner(prediction, probability):
     """Renders the main prediction verdict with distinct color, not the generic warning style."""
     css_class = "rs-verdict-high" if prediction == 1 else "rs-verdict-low"
     icon = "✅" if prediction == 1 else "⚠️"
     label = "High Quality Repository" if prediction == 1 else "Low Quality / Unmaintained Repository"
-    st.markdown(f"""
+    st.markdown(textwrap.dedent(f"""
     <div class="{css_class}">
         <span style="font-size:1.2em;font-weight:600;">{icon} Predicted: {label}</span>
         <span style="float:right;font-size:1.1em;">Model Confidence: {probability:.1%}</span>
     </div>
-    """, unsafe_allow_html=True)
+    """), unsafe_allow_html=True)
 
 def render_note(text):
-    """Muted neutral style for informational asides like 'No topics specified' — NOT a warning."""
+    """Muted neutral style for informational asides like 'No topics specified.'"""
     st.markdown(f'<div class="rs-note">ℹ️ {text}</div>', unsafe_allow_html=True)
 
 def render_caution(text):
@@ -144,7 +145,7 @@ def render_caution(text):
 
 def render_card(content_html):
     """Render a complete card with rs-card styling. All content must be HTML."""
-    st.markdown(f'<div class="rs-card">{content_html}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="rs-card">{textwrap.dedent(content_html)}</div>', unsafe_allow_html=True)
 
 # Configure GitHub API Headers safely
 token = os.getenv("GITHUB_TOKEN")
@@ -199,14 +200,14 @@ def check_exceptions(features):
     """Check for data quality issues that might affect prediction reliability."""
     exceptions = []
     if features.get("has_readme", 1) == 0:
-        exceptions.append("⚠️ No README detected.")
+        exceptions.append("No README detected.")
     elif features.get("readme_size", 0) < 50:
-        exceptions.append("⚠️ Very small README (less than 50 characters).")
+        exceptions.append("Very small README (less than 50 characters).")
     if not features.get("topics"):
-        exceptions.append("⚠️ No topics specified.")
+        exceptions.append("No topics specified.")
     last_commit_days = features.get("last_commit_days")
     if last_commit_days is not None and last_commit_days > 730:  # over 2 years
-        exceptions.append("⚠️ No commits in over 2 years.")
+        exceptions.append("No commits in over 2 years.")
     return exceptions
 
 
@@ -324,7 +325,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
             low_confidence = 0.4 <= probability <= 0.6  # Model uncertainty band
             warning_messages = exceptions.copy()
             if low_confidence:
-                warning_messages.append("⚠️ Low confidence prediction (probability near 0.5).")
+                warning_messages.append("Low confidence prediction (probability near 0.5).")
             
             # Confidence report - explicit match rate and exceptions count
             n_exceptions = len(exceptions)
@@ -454,7 +455,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
                                      ("Documentation", components['documentation']), ("Contributors", components['contributors'])]:
                     pct = value / 100
                     color = "#27ae60" if pct >= 0.7 else "#d4a017" if pct >= 0.4 else "#c0392b"
-                    component_bars_html += f'''
+                    component_bars_html += textwrap.dedent(f'''
                     <div style="margin-bottom: 12px;">
                         <div class="rs-component-label">
                             <span>{label}</span>
@@ -464,7 +465,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
                             <div style="background-color:{color};width:{pct*100}%;height:8px;border-radius:6px;"></div>
                         </div>
                     </div>
-                    '''
+                    ''')
 
                 # Data quality notes as HTML
                 data_quality_html = ""
