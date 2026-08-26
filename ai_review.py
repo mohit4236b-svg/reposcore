@@ -101,8 +101,8 @@ def N(readme_content: str, features: dict, prediction: int, probability: float) 
     for attempt in range(max_retries + 1):
         try:
             c = OpenAI(base_url="https://integrate.api.nvidia.com/v1", api_key=k)
-            resp = c.chat.completions.create(
-                model="meta/llama-3.1-70b-instruct",
+resp = c.chat.completions.create(
+                model="meta/llama-3.3-70b-instruct",
                 messages=[{"role": "user", "content": pt}],
                 temperature=0.3,
                 max_tokens=500
