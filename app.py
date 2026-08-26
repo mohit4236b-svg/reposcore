@@ -103,6 +103,25 @@ st.markdown("""
         color: #cbd5e0;
         margin-bottom: 2px;
     }
+    /* AI Review card - smaller font size for markdown content */
+    .stContainer[data-testid="stVerticalBlockBorderWrapper"] .stMarkdown {
+        font-size: 0.85rem;
+        line-height: 1.5;
+    }
+    .stContainer[data-testid="stVerticalBlockBorderWrapper"] .stMarkdown h3 {
+        font-size: 1rem;
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+    }
+    .stContainer[data-testid="stVerticalBlockBorderWrapper"] .stMarkdown ul {
+        margin-top: 0.25rem;
+        margin-bottom: 0.5rem;
+        padding-left: 1.25rem;
+    }
+    .stContainer[data-testid="stVerticalBlockBorderWrapper"] .stMarkdown li {
+        margin-bottom: 0.25rem;
+        font-size: 0.85rem;
+    }
 </style>
 """, unsafe_allow_html=True)
 
