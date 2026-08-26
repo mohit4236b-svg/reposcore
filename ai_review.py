@@ -11,11 +11,6 @@ try:
     from openai import OpenAI
     O=1
 except:O=0
-try:
-    from google import genai
-    from google.genai import types
-    G=1
-except:G=0
 
 # Prompt for AI review - refined to be more explicit and avoid placeholders
 P = """You are a critical GitHub repository reviewer. Provide a concise, specific review in 3-5 sentences. Cover:
@@ -69,7 +64,7 @@ def clean_ai_response(text: str) -> str:
     return cleaned_text.strip()
 
 def N(readme_content: str, features: dict, prediction: int, probability: float) -> Dict[str, Any]:
-    """Generate review using NVIDIA API with retry logic."""
+    """Generate review using NVIDIA API with robust error handling and retry logic."""
     if not O:
         logger.warning("NVIDIA review skipped: openai not installed")
         return {"review": "AI review unavailable: openai not installed.", "status": "skipped", "provider": "nvidia"}
@@ -119,7 +114,7 @@ def N(readme_content: str, features: dict, prediction: int, probability: float) 
             else:
                 logger.warning("NVIDIA review received empty response")
                 if attempt == max_retries:
-                    return {"review": "AI review unavailable: Empty response.", "status": "error", "provider": "nvidia"}
+                    return {"review": "AI review unavailable: Empty response from NVIDIA API.", "status": "error", "provider": "nvidia"}
         except Exception as e:
             logger.error(f"NVIDIA API error on attempt {attempt + 1}: {str(e)}")
             # Check if it's a transient error worth retrying
@@ -134,89 +129,28 @@ def N(readme_content: str, features: dict, prediction: int, probability: float) 
                 time.sleep(wait_time)
                 continue
             else:
-                return {"review": f"AI review unavailable: {str(e)}", "status": "error", "provider": "nvidia"}
+                # Provide user-friendly error messages based on error type
+                if "timeout" in error_str or "connection" in error_str or "network" in error_str:
+                    user_msg = "AI review unavailable: Unable to connect to NVIDIA API. Please check network connectivity."
+                elif "429" in error_str or "rate limit" in error_str:
+                    user_msg = "AI review unavailable: NVIDIA API rate limit exceeded. Please try again later."
+                elif "500" in error_str or "502" in error_str or "503" in error_str or "504" in error_str:
+                    user_msg = "AI review unavailable: NVIDIA API server error. Please try again later."
+                else:
+                    user_msg = f"AI review unavailable: {str(e)}"
+                return {"review": user_msg, "status": "error", "provider": "nvidia"}
     
     # This point should not be reached due to loop, but just in case
-    return {"review": "AI review unavailable: Max retries exceeded.", "status": "error", "provider": "nvidia"}
-
-def g_(readme_content: str, features: dict, prediction: int, probability: float) -> Dict[str, Any]:
-    """Generate review using Gemini API."""
-    if not G:
-        logger.warning("Gemini review skipped: google-genai not installed")
-        return {"review": "AI review unavailable: google-genai not installed.", "status": "skipped", "provider": "gemini"}
-    
-    k = os.getenv("GEMINI_API_KEY")
-    if not k or k.strip() == "":
-        logger.warning("Gemini review skipped: GEMINI_API_KEY not set")
-        return {"review": "AI review unavailable: GEMINI_API_KEY not set.", "status": "skipped", "provider": "gemini"}
-    
-    m = 8000
-    rp = readme_content[:m]
-    if len(readme_content) > m:
-        rp += f"\n\n[README truncated from {len(readme_content)} to {m} chars]"
-    
-    pt = P.format(
-        full_name=features.get("full_name", "Unknown"),
-        stars=features.get("stars", 0),
-        forks=features.get("forks", 0),
-        open_issues=features.get("open_issues", 0),
-        repo_age_days=features.get("repo_age_days", 0),
-        last_commit_days=features.get("last_commit_days", 0),
-        total_contributors=features.get("total_contributors", 0),
-        topics=", ".join(features.get("topics", [])) if features.get("topics") else "None",
-        primary_language=features.get("primary_language", "Unknown"),
-        has_ci="Yes" if features.get("has_ci") else "No",
-        has_tests="Yes" if features.get("has_tests") else "No",
-        has_license="Yes" if features.get("has_license") else "No",
-        readme_size=features.get("readme_size", 0),
-        readme_for_prompt=rp
-    )
-    
-    try:
-        c = genai.Client(api_key=k)
-        resp = c.models.generate_content(
-            model="gemini-3.6-flash",
-            contents=pt,
-            config=types.GenerateContentConfig(temperature=0.3, max_output_tokens=500)
-        )
-        if resp.text:
-            cleaned_review = clean_ai_response(resp.text.strip())
-            logger.info("Gemini review successful")
-            return {"review": cleaned_review, "status": "success", "provider": "gemini"}
-        else:
-            logger.warning("Gemini review received empty response")
-            return {"review": "AI review unavailable: Empty response.", "status": "error", "provider": "gemini"}
-    except Exception as e:
-        logger.error(f"Gemini API error: {str(e)}")
-        return {"review": f"AI review unavailable: {str(e)}", "status": "error", "provider": "gemini"}
+    return {"review": "AI review unavailable: Max retries exceeded for NVIDIA API.", "status": "error", "provider": "nvidia"}
 
 def generate_ai_review(readme_content: str, features: dict, prediction: int, probability: float) -> Dict[str, Any]:
-    """Generate AI review with fallback control via environment variable."""
+    """Generate AI review using NVIDIA API exclusively."""
     if not readme_content or not readme_content.strip():
         return {"review": "AI review unavailable: README empty.", "status": "error", "provider": "none"}
     
-    # Try NVIDIA first
+    # Use only NVIDIA API
     nres = N(readme_content, features, prediction, probability)
-    if nres["status"] == "success":
-        return nres
-    
-    # Check if fallback is enabled via environment variable
-    fallback_enabled = os.getenv("FALLBACK_ENABLED", "true").lower() == "true"
-    if not fallback_enabled:
-        logger.info("Gemini fallback disabled by FALLBACK_ENABLED=false")
-        # Return NVIDIA result even if it failed, since fallback is disabled
-        nres["provider"] = "nvidia (fallback disabled)"
-        return nres
-    
-    # Try Gemini as fallback
-    gres = g_(readme_content, features, prediction, probability)
-    if gres["status"] == "success":
-        return gres
-    
-    # Both failed
-    error_msg = f"AI review unavailable: Both NVIDIA and Gemini failed.\nNVIDIA: {nres['review']}\nGemini: {gres['review']}"
-    logger.error("Both NVIDIA and Gemini failed")
-    return {"review": error_msg, "status": "error", "provider": "both_failed"}
+    return nres
 
 def format_ai_review_for_display(ai_review_result: dict) -> str:
     """Format AI review result for display in frontend."""
