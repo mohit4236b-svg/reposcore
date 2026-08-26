@@ -170,13 +170,13 @@ def generate_ai_review(readme_content: str, features: dict, prediction: int, pro
     return nres
 
 def format_ai_review_for_display(ai_review_result: dict) -> str:
-    """Format AI review result for display in frontend."""
+    """Format AI review result for display in frontend - returns plain markdown string."""
     if ai_review_result.get("status") == "success":
         prov = ai_review_result.get("provider", "unknown").upper()
         review = ai_review_result.get('review', '')
-        # Convert markdown-style headers to Streamlit-compatible format
-        review = review.replace('## ', '### ')
-        return f"**AI Review** (via {prov}):\n\n{review}"
+        # The AI now returns proper markdown with ## headers and bullet points
+        # Just prepend the provider attribution
+        return f"**AI Review** (via {prov})\n\n{review}"
     elif ai_review_result.get("status") == "skipped":
         return f"*AI review skipped: {ai_review_result.get('review', '')}*"
     else:
