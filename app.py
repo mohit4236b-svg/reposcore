@@ -106,7 +106,7 @@ st.markdown("""
     /* AI Review card - smaller font size for markdown content */
     .stContainer[data-testid="stVerticalBlockBorderWrapper"] .stMarkdown {
         font-size: 0.9rem;
-        line-height: 1.5;
+        line-height: 1;
     }
     .stContainer[data-testid="stVerticalBlockBorderWrapper"] .stMarkdown h3 {
         font-size: 1rem;
