@@ -122,7 +122,7 @@ def N(readme_content: str, features: dict, prediction: int, probability: float) 
                 model="nvidia/nemotron-3-ultra-550b-a55b",
                 messages=[{"role": "user", "content": pt}],
                 temperature=0.3,
-                max_tokens=3000
+                max_tokens=10000
             )
             if resp.choices[0].message.content:
                 cleaned_review = clean_ai_response(resp.choices[0].message.content.strip())
