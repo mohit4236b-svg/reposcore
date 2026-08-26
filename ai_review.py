@@ -100,9 +100,13 @@ def N(readme_content: str, features: dict, prediction: int, probability: float) 
     max_retries = 2
     for attempt in range(max_retries + 1):
         try:
-            c = OpenAI(base_url="https://integrate.api.nvidia.com/v1", api_key=k)
+            c = OpenAI(
+                base_url="https://integrate.api.nvidia.com/v1",
+                api_key=k,
+                default_headers={"Authorization": f"Bearer {k}"}
+            )
             resp = c.chat.completions.create(
-                model="nvidia/llama-3.1-nemotron-70b-instruct",
+                model="nvidia/nemotron-3-ultra-550b-a55b",
                 messages=[{"role": "user", "content": pt}],
                 temperature=0.3,
                 max_tokens=500
