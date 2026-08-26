@@ -102,7 +102,7 @@ def N(readme_content: str, features: dict, prediction: int, probability: float) 
         try:
             c = OpenAI(base_url="https://integrate.api.nvidia.com/v1", api_key=k)
             resp = c.chat.completions.create(
-                model="llama-3.3-70b-instruct",
+                model="nvidia/llama-3.1-nemotron-70b-instruct",
                 messages=[{"role": "user", "content": pt}],
                 temperature=0.3,
                 max_tokens=500
