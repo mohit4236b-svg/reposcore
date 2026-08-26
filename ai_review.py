@@ -12,25 +12,38 @@ try:
     O=1
 except:O=0
 
-# Prompt for AI review - refined to be more explicit and avoid placeholders
-P = """You are a critical GitHub repository reviewer. Provide a concise, specific review in 3-5 sentences. Cover:
-1) README: purpose, features, technology, architecture
-2) How metrics (stars, activity) align with README claims
-3) 1-2 actionable gaps for improvement
-4) Strengths in README/setup
-Do NOT mention models, predictions, confidence, or use placeholder text like "*Sentence 1*". Output ONLY the review paragraph.
+# Prompt for AI review - request structured comprehensive summary
+P = """You are a critical GitHub repository reviewer. Provide a comprehensive, structured review covering all four sections below. Use clear section headers and bullet points where appropriate.
 
-Repository: {full_name}
-Stats: ★{stars} | Fork:{forks} | Issues:{open_issues}
-Age: {repo_age_days} days | Last commit: {last_commit_days} days ago
-Contributors: {total_contributors}
-Topics: {topics}
-Primary Language: {primary_language}
-CI: {has_ci} | Tests: {has_tests} | License: {has_license}
-README length: {readme_size} characters
+**Repository:** {full_name}
+**Stats:** ★{stars} | Forks:{forks} | Open Issues:{open_issues}
+**Age:** {repo_age_days} days | Last commit: {last_commit_days} days ago
+**Contributors:** {total_contributors}
+**Topics:** {topics}
+**Primary Language:** {primary_language}
+**CI:** {has_ci} | **Tests:** {has_tests} | **License:** {has_license}
+**README length:** {readme_size} characters
 
-README content:
+**README content:**
 {readme_for_prompt}
+
+---
+
+Output the review in this exact format with these four sections:
+
+## Project Purpose
+Describe what the project does, its core features, technology stack, and architecture in 2-3 sentences.
+
+## Key Strengths
+List 3-4 bullet points highlighting the project's strongest aspects (README quality, metrics, community, engineering practices, etc.).
+
+## Gaps & Missing Elements
+List 3-4 bullet points identifying actionable gaps (missing CI, tests, documentation, contribution guidelines, license, etc.).
+
+## Production Readiness Assessment
+Provide a 2-3 sentence assessment of whether this project appears production-ready based on the available signals.
+
+Do NOT mention models, predictions, confidence scores, or use placeholder text. Output ONLY the structured review.
 """
 
 def clean_ai_response(text: str) -> str:
@@ -109,7 +122,7 @@ def N(readme_content: str, features: dict, prediction: int, probability: float) 
                 model="nvidia/nemotron-3-ultra-550b-a55b",
                 messages=[{"role": "user", "content": pt}],
                 temperature=0.3,
-                max_tokens=500
+                max_tokens=1500
             )
             if resp.choices[0].message.content:
                 cleaned_review = clean_ai_response(resp.choices[0].message.content.strip())
@@ -160,7 +173,10 @@ def format_ai_review_for_display(ai_review_result: dict) -> str:
     """Format AI review result for display in frontend."""
     if ai_review_result.get("status") == "success":
         prov = ai_review_result.get("provider", "unknown").upper()
-        return f"**AI Review** (via {prov}):\n\n{ai_review_result.get('review', '')}"
+        review = ai_review_result.get('review', '')
+        # Convert markdown-style headers to Streamlit-compatible format
+        review = review.replace('## ', '### ')
+        return f"**AI Review** (via {prov}):\n\n{review}"
     elif ai_review_result.get("status") == "skipped":
         return f"*AI review skipped: {ai_review_result.get('review', '')}*"
     else:
