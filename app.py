@@ -79,16 +79,31 @@ st.markdown("""
         display: flex; justify-content: space-between;
         font-size: 0.9em; color: #cbd5e0; margin-bottom: 2px;
     }
-    .stContainer[data-testid="stVerticalBlockBorderWrapper"] .stMarkdown {
-        font-size: 0.9rem; line-height: 1;
+
+    /* FIX: ".stContainer" was never a real class Streamlit applies — the
+       bordered container div only carries data-testid=
+       "stVerticalBlockBorderWrapper". Selecting on that attribute directly
+       (no bogus ".stContainer" prefix) is what actually matches, so this
+       now really shrinks text inside any bordered container, including
+       the AI Review tab where the text was rendering oversized. */
+    div[data-testid="stVerticalBlockBorderWrapper"] .stMarkdown {
+        font-size: 0.9rem;
+        line-height: 1.5;
     }
-    .stContainer[data-testid="stVerticalBlockBorderWrapper"] .stMarkdown h3 {
-        font-size: 1rem; margin-top: 1rem; margin-bottom: 0.5rem;
+    div[data-testid="stVerticalBlockBorderWrapper"] .stMarkdown h1,
+    div[data-testid="stVerticalBlockBorderWrapper"] .stMarkdown h2,
+    div[data-testid="stVerticalBlockBorderWrapper"] .stMarkdown h3 {
+        font-size: 1.05rem;
+        margin-top: 0.9rem;
+        margin-bottom: 0.4rem;
     }
-    .stContainer[data-testid="stVerticalBlockBorderWrapper"] .stMarkdown ul {
+    div[data-testid="stVerticalBlockBorderWrapper"] .stMarkdown p {
+        margin-bottom: 0.6rem;
+    }
+    div[data-testid="stVerticalBlockBorderWrapper"] .stMarkdown ul {
         margin-top: 0.25rem; margin-bottom: 0.5rem; padding-left: 1.25rem;
     }
-    .stContainer[data-testid="stVerticalBlockBorderWrapper"] .stMarkdown li {
+    div[data-testid="stVerticalBlockBorderWrapper"] .stMarkdown li {
         margin-bottom: 0.25rem; font-size: 0.9rem;
     }
 </style>
