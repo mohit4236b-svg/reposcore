@@ -354,9 +354,7 @@ if st.button("Run Comprehensive Score", type="primary") and repo_input:
                 warning_messages.append("Low confidence inference (probability near 0.5 decision boundary).")
 
             # Heuristic Computation
-            try:
-                fromHere is the refactored, upgraded version of your `app.py`. 
-
+            try: 
 ### Key Improvements Made
 * **Cleaned Up Non-Breaking Spaces:** Replaced hidden invisible unicode characters (`\xa0`) that often cause syntax or indentation errors in Python scripts.
 * **Eliminated Redundant Logic:** Removed duplicated score calculations, unnecessary double checks, and unneeded imports (`base64`, `requests`, `scipy.sparse.hstack`).
