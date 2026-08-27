@@ -202,11 +202,11 @@ st.markdown("""
 def render_component_bar(label, value, max_value=100):
     pct = value / max_value
     if pct >= 0.7:
-        color = "var(--accent)"
+        color = "#00d4aa"
     elif pct >= 0.4:
-        color = var(--warning)
+        color = "#f0a500"
     else:
-        color = var(--danger)
+        color = "#ff5f57"
     st.markdown(textwrap.dedent(f"""
     <div style="margin-bottom: 12px;">
         <div style="display: flex; justify-content: space-between; font-size: 0.9em; color: var(--fg-secondary); margin-bottom: 2px;">
@@ -506,11 +506,11 @@ if st.button("Predict Quality", type="primary") and repo_input:
 # --- Headline combined score ---
     if combined_score is not None:
         if combined_score >= 70:
-            score_color, score_emoji = "var(--accent)", "🟢"
+            score_color, score_emoji = "#00d4aa", "🟢"
         elif combined_score >= 40:
-            score_color, score_emoji = var(--warning), "🟡"
+            score_color, score_emoji = "#f0a500", "🟡"
         else:
-            score_color, score_emoji = var(--danger), "🔴"
+            score_color, score_emoji = "#ff5f57", "🔴"
 
         score_card_html = f'''<div style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;">
      <h2 class="section-header" style="margin-top: 0; margin-bottom: 1rem;">📊 Combined Score: {combined_score:.1f}/100 {score_emoji}</h2>
@@ -528,7 +528,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
      <div style="display: flex; gap: 1rem;">
          <div style="flex: 1; text-align: center; padding: 0.5rem; background: var(--bg-tertiary); border-radius: 6px;">
              <div style="font-size: 0.75em; color: var(--fg-secondary);">Divergence</div>
-             <div style="font-size: 1.2em; font-weight: 700; color: {'var(--accent)' if divergence is not None and abs(divergence) <= 15 else var(--danger)};">{divergence:+.1f if divergence is not None else '—'}</div>
+             <div style="font-size: 1.2em; font-weight: 700; color: {'#00d4aa' if divergence is not None and abs(divergence) <= 15 else '#ff5f57'};">{divergence:+.1f if divergence is not None else '—'}</div>
          </div>
          <div style="flex: 1; text-align: center; padding: 0.5rem; background: var(--bg-tertiary); border-radius: 6px;">
              <div style="font-size: 0.75em; color: var(--fg-secondary);">Threshold</div>
