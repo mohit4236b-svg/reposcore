@@ -44,67 +44,153 @@ AUDIT_CSV = os.path.join(AUDIT_DIR, "scoring_decisions.csv")
 AUDIT_MAX_ROWS = 10_000  # rotate once the active log passes this many rows
 
 st.markdown("""
-<style>
-    .section-header { color: #00b4d8 !important; font-weight: 600; }
-    .combined-score-container {
-        padding: 1rem; border-radius: 0.5rem;
-        background: linear-gradient(135deg, #1e1e2e 0%, #2a2a3e 100%);
-        border: 1px solid #3a3a4e;
-    }
-    .stTabs [data-baseweb="tab-list"] { gap: 0.5rem; }
-    .stTabs [data-baseweb="tab"] { padding: 0.5rem 1rem; border-radius: 0.5rem; }
-    .rs-card {
-        background-color: #1a1f2e; border: 1px solid #2d3548;
-        border-radius: 10px; padding: 20px; margin-bottom: 16px;
-    }
-    .rs-verdict-low {
-        background-color: #3a1f1f; border: 1px solid #c0392b;
-        border-radius: 10px; padding: 16px 20px; margin-bottom: 12px;
-    }
-    .rs-verdict-high {
-        background-color: #1a3a26; border: 1px solid #27ae60;
-        border-radius: 10px; padding: 16px 20px; margin-bottom: 12px;
-    }
-    .rs-note {
-        background-color: #1e2230; border-left: 3px solid #4a5568;
-        border-radius: 4px; padding: 10px 14px; margin-bottom: 8px;
-        color: #9aa5b8; font-size: 0.9em;
-    }
-    .rs-caution {
-        background-color: #2e2a1a; border-left: 3px solid #d4a017;
-        border-radius: 4px; padding: 10px 14px; margin-bottom: 12px;
-        color: #e0c26e;
-    }
-    .rs-component-label {
-        display: flex; justify-content: space-between;
-        font-size: 0.9em; color: #cbd5e0; margin-bottom: 2px;
+ <style>
+    :root {
+        --bg-primary: #0d0d0f;
+        --bg-secondary: #1a1a20;
+        --bg-tertiary: #25252a;
+        --fg-primary: #e8e8ec;
+        --fg-secondary: #a0a0a8;
+        --accent: #00d4aa;
+        --accent-hover: #00f5c4;
+        --danger: #ff5f57;
+        --warning: #f0a500;
+        --muted: #6b6b7a;
+        --card-bg: #14141a;
+        --border: #3a3a4a;
     }
 
-    /* FIX: ".stContainer" was never a real class Streamlit applies — the
-       bordered container div only carries data-testid=
-       "stVerticalBlockBorderWrapper". Selecting on that attribute directly
-       (no bogus ".stContainer" prefix) is what actually matches, so this
-       now really shrinks text inside any bordered container, including
-       the AI Review tab where the text was rendering oversized. */
-    div[data-testid="stVerticalBlockBorderWrapper"] .stMarkdown {
+    * {
+        box-sizing: border-box;
+    }
+
+    .stApp {
+        background-color: var(--bg-primary);
+        color: var(--fg-primary);
+        font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+    }
+
+    .main .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+        max-width: 1200px;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        color: var(--fg-primary);
+        font-weight: 600;
+        line-height: 1.3;
+    }
+
+    .section-header {
+        color: var(--accent) !important;
+        font-weight: 600;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--border);
+        margin-bottom: 1.5rem;
+    }
+
+    .sub-section-header {
+        color: var(--accent);
+        font-weight: 500;
         font-size: 0.9rem;
-        line-height: 1.5;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 1rem;
     }
-    div[data-testid="stVerticalBlockBorderWrapper"] .stMarkdown h1,
-    div[data-testid="stVerticalBlockBorderWrapper"] .stMarkdown h2,
-    div[data-testid="stVerticalBlockBorderWrapper"] .stMarkdown h3 {
-        font-size: 1.05rem;
-        margin-top: 0.9rem;
-        margin-bottom: 0.4rem;
+
+    .stTextInput > div > div > input {
+        background-color: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--fg-primary);
+        font-size: 1rem;
+        padding: 0.75rem 1.2rem;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
-    div[data-testid="stVerticalBlockBorderWrapper"] .stMarkdown p {
-        margin-bottom: 0.6rem;
+
+    .stTextInput > div > div > input:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.15);
+        outline: none;
     }
-    div[data-testid="stVerticalBlockBorderWrapper"] .stMarkdown ul {
-        margin-top: 0.25rem; margin-bottom: 0.5rem; padding-left: 1.25rem;
+
+    .stTextInput > div > div > input::placeholder {
+        color: var(--fg-secondary);
     }
-    div[data-testid="stVerticalBlockBorderWrapper"] .stMarkdown li {
-        margin-bottom: 0.25rem; font-size: 0.9rem;
+
+    .stSlider > div > div > div > div {
+        background-color: var(--border);
+        border-radius: 4px;
+    }
+
+    .stSlider > div > div > div > div > div {
+        background-color: var(--accent);
+        border-radius: 4px;
+        transition: width 0.15s ease;
+    }
+
+    .stButton > button {
+        background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+        color: var(--bg-primary);
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+        font-size: 1.1rem;
+        font-weight: 500;
+        width: 100%;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        margin-top: 1rem;
+    }
+
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0, 212, 170, 0.3);
+    }
+
+    .stButton > button:active {
+        transform: translateY(0);
+    }
+
+    .stMetric > label {
+        color: var(--fg-secondary) !important;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .stMetric > div {
+        color: var(--fg-primary);
+    }
+
+    /* Improve Streamlit column gaps */
+    .stColumns > div {
+        gap: 0.5rem;
+    }
+
+    /* Better table/text readability */
+    .stDataFrame {
+        background-color: var(--bg-secondary);
+        border-radius: 8px;
+    }
+
+    /* Avatar-like repo name display */
+    .repo-name-display {
+        display: inline-block;
+        background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
+        padding: 0.2rem 0.6rem;
+        border-radius: 4px;
+        font-family: 'SF Mono', 'Consolas', monospace;
+        font-size: 0.85rem;
+        color: var(--accent);
+        margin-left: 0.5rem;
+    }
+
+    /* Focus visible states */
+    .stTextInput > div > div > input:focus-visible,
+    .stSlider > div > div > div > div > div:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -115,14 +201,21 @@ st.markdown("""
 # ----------------------------------------------------------------------------
 def render_component_bar(label, value, max_value=100):
     pct = value / max_value
-    color = "#27ae60" if pct >= 0.7 else "#d4a017" if pct >= 0.4 else "#c0392b"
+    if pct >= 0.7:
+        color = "var(--accent)"
+    elif pct >= 0.4:
+        color = var(--warning)
+    else:
+        color = var(--danger)
     st.markdown(textwrap.dedent(f"""
-    <div class="rs-component-label">
-        <span>{label}</span>
-        <span>{value:.1f}/{max_value}</span>
-    </div>
-    <div style="background-color:#2d3548;border-radius:6px;height:8px;margin-bottom:12px;">
-        <div style="background-color:{color};width:{pct*100}%;height:8px;border-radius:6px;"></div>
+    <div style="margin-bottom: 12px;">
+        <div style="display: flex; justify-content: space-between; font-size: 0.9em; color: var(--fg-secondary); margin-bottom: 2px;">
+            <span>{label}</span>
+            <span>{value:.1f}/{max_value}</span>
+        </div>
+        <div style="background-color: var(--bg-tertiary); border-radius: 6px; height: 8px; margin-bottom: 8px;">
+            <div style="background-color: {color}; width:{pct*100}%; height: 8px; border-radius: 6px; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+        </div>
     </div>
     """), unsafe_allow_html=True)
 
@@ -338,16 +431,20 @@ def log_audit_trail(features, probability, prediction, threshold):
 # ----------------------------------------------------------------------------
 rf_model, tfidf_readme, tfidf_topics, scaler = load_ml_assets()
 
-st.title("⭐ RepoScore: GitHub Repository Quality Predictor")
-st.caption("Analyze a public GitHub repository to predict its overall quality score.")
+st.markdown("""
+ <div style="text-align: center; margin-bottom: 2rem;">
+     <h1 style="font-size: 2.5rem; font-weight: 700; background: linear-gradient(135deg, var(--fg-primary), var(--fg-secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.5rem;">⭐ RepoScore</h1>
+     <p style="color: var(--fg-secondary); font-size: 1.1rem; margin-bottom: 0.5rem;">GitHub Repository Quality Predictor</p>
+     <p style="color: var(--muted); font-size: 0.9rem;">Analyze any public repository to predict its overall quality score using machine learning and heuristic analysis.</p>
+ </div>
+""", unsafe_allow_html=True)
 
-repo_input = st.text_input("Enter Repository (owner/name):", placeholder="scikit-learn/scikit-learn")
+repo_input = st.text_input("Enter Repository (owner/name):", placeholder="e.g., scikit-learn/scikit-learn", help="Format: owner/repository name (e.g., scikit-learn/scikit-learn)")
 threshold = st.slider(
     "Quality threshold", min_value=0.1, max_value=0.9, value=0.3, step=0.05,
-    help="Lower = higher recall, more false positives (catches more true 'quality' repos, "
-         "but calls more low-quality ones 'high' too). Higher = higher precision, more false "
-         "negatives. 5-fold CV: F1 peaks around 0.3 (precision 0.67/recall 0.89) vs the default "
-         "0.5 (precision 0.89/recall 0.47). See README for the full table."
+    help="Lower = higher recall (catches more 'quality' repos, but flags more false positives). "
+         "Higher = higher precision (fewer false positives, but may miss some quality repos). "
+         "F1 optimal: ~0.3 (precision 0.67/recall 0.89) vs default 0.5 (precision 0.89/recall 0.47)."
 )
 
 if st.button("Predict Quality", type="primary") and repo_input:
@@ -356,11 +453,14 @@ if st.button("Predict Quality", type="primary") and repo_input:
         st.error("Please enter the repository as `owner/name` (e.g. `scikit-learn/scikit-learn`).")
         st.stop()
 
-    with st.spinner("Fetching repo data from GitHub API..."):
+    with st.spinner("Fetching repo data from GitHub API and analyzing quality..."):
         try:
             features = fetch_repo_features(repo_input, headers=headers)
         except RepoFetchError as e:
             st.error(str(e))
+            st.stop()
+        except Exception as e:
+            st.error(f"An unexpected error occurred: {str(e)}")
             st.stop()
 
     topics = features["topics"]
@@ -403,34 +503,37 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
     st.divider()
 
-    # --- Headline combined score ---
+# --- Headline combined score ---
     if combined_score is not None:
         if combined_score >= 70:
-            score_color, score_emoji = "green", "🟢"
+            score_color, score_emoji = "var(--accent)", "🟢"
         elif combined_score >= 40:
-            score_color, score_emoji = "orange", "🟡"
+            score_color, score_emoji = var(--warning), "🟡"
         else:
-            score_color, score_emoji = "red", "🔴"
+            score_color, score_emoji = var(--danger), "🔴"
 
-        score_card_html = f'''<h2 class="section-header">📊 Combined Score: {combined_score:.1f}/100 {score_emoji}</h2>
- <div style="margin-bottom: 1rem;">
-     <div style="background-color: #2d3548; border-radius: 6px; height: 20px; overflow: hidden;">
-         <div style="background-color: {score_color}; width: {combined_score}%; height: 100%; border-radius: 6px; transition: width 0.3s ease;"></div>
+        score_card_html = f'''<div style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;">
+     <h2 class="section-header" style="margin-top: 0; margin-bottom: 1rem;">📊 Combined Score: {combined_score:.1f}/100 {score_emoji}</h2>
+     <div style="background: var(--bg-tertiary); border-radius: 8px; height: 12px; overflow: hidden; margin-bottom: 1rem;">
+         <div style="background: {score_color}; width: {combined_score}%; height: 100%; border-radius: 8px; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);"></div>
      </div>
-     <div style="font-size: 0.9em; color: #cbd5e0; margin-top: 0.5rem;">{combined_score:.1f}% — 50% ML Model + 50% Heuristic</div>
- </div>
- <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-     <div style="flex: 1; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;">
-         <div style="font-size: 0.85em; color: #94a3b8;">ML Model</div>
-         <div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{ml_score_pct:.1f}%</div>
+     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+         <span style="color: var(--fg-secondary); font-size: 0.85rem;">ML Model</span>
+         <span style="color: var(--fg-primary); font-weight: 600; font-size: 1.1rem;">{ml_score_pct:.1f}%</span>
      </div>
-     <div style="flex: 1; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;">
-         <div style="font-size: 0.85em; color: #94a3b8;">Heuristic</div>
-         <div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{heuristic_score:.1f}/100</div>
+     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+         <span style="color: var(--fg-secondary); font-size: 0.85rem;">Heuristic</span>
+         <span style="color: var(--fg-primary); font-weight: 600; font-size: 1.1rem;">{heuristic_score:.1f}/100</span>
      </div>
-     <div style="flex: 1; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;">
-         <div style="font-size: 0.85em; color: #94a3b8;">Divergence</div>
-         <div style="font-size: 1.5em; font-weight: 600; color: {'#f87171' if divergence and abs(divergence) > 15 else '#e2e8f0'};">{divergence:+.1f}</div>
+     <div style="display: flex; gap: 1rem;">
+         <div style="flex: 1; text-align: center; padding: 0.5rem; background: var(--bg-tertiary); border-radius: 6px;">
+             <div style="font-size: 0.75em; color: var(--fg-secondary);">Divergence</div>
+             <div style="font-size: 1.2em; font-weight: 700; color: {'var(--accent)' if divergence is not None and abs(divergence) <= 15 else var(--danger)};">{divergence:+.1f if divergence is not None else '—'}</div>
+         </div>
+         <div style="flex: 1; text-align: center; padding: 0.5rem; background: var(--bg-tertiary); border-radius: 6px;">
+             <div style="font-size: 0.75em; color: var(--fg-secondary);">Threshold</div>
+             <div style="font-size: 1.2em; font-weight: 600; color: var(--fg-primary);">{threshold:.2f}</div>
+         </div>
      </div>
  </div>'''
         render_card(score_card_html)
@@ -441,9 +544,9 @@ if st.button("Predict Quality", type="primary") and repo_input:
             )
 
     confidence_html = (
-        f'<div style="font-size: 0.95em; color: #cbd5e0;">Confidence report: '
-        f'<strong>{probability:.1%}</strong> match rate | {total_issues} exception'
-        f'{"s" if total_issues != 1 else ""} flagged</div>'
+        f'<div style="font-size: 0.95em; color: var(--fg-secondary);">'
+        f'Confidence report: <strong>{probability:.1%}</strong> match rate | '
+        f'{total_issues} exception{"s" if total_issues != 1 else ""} flagged</div>'
     )
     render_card(confidence_html)
     for msg in warning_messages:
@@ -472,17 +575,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
                 ("Documentation", components["documentation"]),
                 ("Contributors", components["contributors"]),
             ]:
-                pct = value / 100
-                color = "#27ae60" if pct >= 0.7 else "#d4a017" if pct >= 0.4 else "#c0392b"
-                component_bars_html += f'''<div style="margin-bottom: 12px;">
-    <div class="rs-component-label">
-        <span>{label}</span>
-        <span>{value:.1f}/100</span>
-    </div>
-    <div style="background-color:#2d3548;border-radius:6px;height:8px;">
-        <div style="background-color:{color};width:{pct*100}%;height:8px;border-radius:6px;"></div>
-    </div>
-</div>'''
+                render_component_bar(label, value)
 
         data_quality_html = ""
         if exceptions or low_confidence:
@@ -566,11 +659,11 @@ if st.button("Predict Quality", type="primary") and repo_input:
             with feat_col1:
                 st.markdown("**Pushed toward High Quality**")
                 for _, row in top_pos.iterrows():
-                    st.markdown(f":green[✅ {row['feature']} (+{row['shap_value']:.3f})]")
+                    st.markdown(f":green[✅ {row['feature']} +{row['shap_value']:.3f}]")
             with feat_col2:
                 st.markdown("**Pushed toward Low Quality**")
                 for _, row in top_neg.iterrows():
-                    st.markdown(f":red[❌ {row['feature']} ({row['shap_value']:.3f})]")
+                    st.markdown(f":red[❌ {row['feature']} {row['shap_value']:.3f}]")
         except Exception as err:
             st.caption(f"Explanation unavailable: {err}")
 
@@ -634,4 +727,4 @@ if st.button("Predict Quality", type="primary") and repo_input:
                 else:
                     st.caption(format_ai_review_for_display(ai_result))
             except Exception as err:
-                st.caption(f"AI review unavailable: {err}")
+                st.error(f"AI review unavailable: {str(err)}")
