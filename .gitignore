@@ -20,3 +20,31 @@ models/readme_texts_batch2_partial.csv
 models/topics_partial.csv
 models/feature_importances_v2.csv
 models/tfidf_vectorizer.pkl
+
+# Scratch/debug files at repo root (not in subdirectories)
+/write_*.py
+/debug_*.py
+/fix_*.py
+/verify_*.py
+/test_fix*.py
+/test_final*.py
+/test_mediocre*.py
+/test_repo.py
+/test_single*.py
+/test_spoon*.py
+/test_ai_review.py
+/test_failure_cases.py
+/test_output*.txt
+/output.txt
+/divergence_output.txt
+/streamlit_page_text*.txt
+/streamlit_ai_review*.png
+/scoring_divergence_results.csv
+/scoring_divergence_results.md
+/install.sh
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+*.swo
