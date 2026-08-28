@@ -122,6 +122,14 @@ def fetch_repo_features(full_name, headers=None):
     # Detect license from repo.license field (MISSING in original)
     has_license = repo.get("license") is not None
 
+    # Detect CONTRIBUTING.md in repo root (case-insensitive via GitHub API)
+    contributing_resp = requests.get(f"https://api.github.com/repos/{full_name}/contents/CONTRIBUTING.md", headers=headers)
+    has_contributing = contributing_resp.status_code == 200
+
+    # Detect CODE_OF_CONDUCT.md in repo root (case-insensitive via GitHub API)
+    coc_resp = requests.get(f"https://api.github.com/repos/{full_name}/contents/CODE_OF_CONDUCT.md", headers=headers)
+    has_code_of_conduct = coc_resp.status_code == 200
+
     # Get topics for TF-IDF vectorization
     topics = repo.get("topics", []) or []
 
@@ -149,6 +157,8 @@ def fetch_repo_features(full_name, headers=None):
         "has_ci": has_ci,
         "has_tests": has_tests,
         "has_license": has_license,
+        "has_contributing": has_contributing,
+        "has_code_of_conduct": has_code_of_conduct,
         "total_contributors": total_contributors,
     }
 

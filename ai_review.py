@@ -21,7 +21,7 @@ P = """You are a critical GitHub repository reviewer. Provide a comprehensive, s
 **Contributors:** {total_contributors}
 **Topics:** {topics}
 **Primary Language:** {primary_language}
-**CI:** {has_ci} | **Tests:** {has_tests} | **License:** {has_license}
+**CI:** {has_ci} | **Tests:** {has_tests} | **License:** {has_license} | **CONTRIBUTING:** {has_contributing} | **CODE_OF_CONDUCT:** {has_code_of_conduct}
 **README length:** {readme_size} characters
 
 **README content:**
@@ -120,6 +120,8 @@ def N(readme_content: str, features: dict, prediction: int, probability: float) 
         has_ci="Yes" if features.get("has_ci") else "No",
         has_tests="Yes" if features.get("has_tests") else "No",
         has_license="Yes" if features.get("has_license") else "No",
+        has_contributing="Yes" if features.get("has_contributing") else "No",
+        has_code_of_conduct="Yes" if features.get("has_code_of_conduct") else "No",
         readme_size=features.get("readme_size", 0),
         readme_for_prompt=rp
     )
