@@ -1,0 +1,26 @@
+[server]
+headless = true
+port = 8501
+enableCORS = false
+enableXsrfProtection = false
+maxUploadSize = 200
+
+[browser]
+gatherUsageStats = false
+serverAddress = "localhost"
+serverPort = 8501
+
+[theme]
+primaryColor = "#00b4d8"
+backgroundColor = "#0f111a"
+secondaryBackgroundColor = "#1a1f2e"
+textColor = "#e2e8f0"
+font = "sans serif"
+
+[runner]
+magicEnabled = true
+installTracer = false
+fixMatplotlib = true
+
+[global]
+developmentMode = false

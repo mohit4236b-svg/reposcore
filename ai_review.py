@@ -36,9 +36,13 @@ Describe what the project does, its core features, technology stack, and archite
 
 ## Key Strengths
 List 3-4 bullet points highlighting the project's strongest aspects (README quality, metrics, community, engineering practices, etc.).
+Each bullet MUST be a proper markdown bullet list item. Format: `- **Lead Phrase**: Explanation text here.`
+Example: `- **Exceptional README documentation**: with transparent methodology, honest cross-validated metrics, and leakage analysis.
 
 ## Gaps & Missing Elements
 List 3-4 bullet points identifying actionable gaps (missing CI, tests, documentation, contribution guidelines, license, etc.).
+Each bullet MUST be a proper markdown bullet list item. Format: `- **Lead Phrase**: Explanation text here.`
+Example: `- **No CI/CD pipeline**: despite CI presence being a core feature in the project's own quality definition.
 
 ## Production Readiness Assessment
 Provide a 2-3 sentence assessment of whether this project appears production-ready based on the available signals.
@@ -47,37 +51,46 @@ Do NOT mention models, predictions, confidence scores, or use placeholder text. 
 """
 
 def clean_ai_response(text: str) -> str:
-    """Clean and sanitize AI response to remove placeholders and ensure proper format."""
+    """Clean and sanitize AI response to remove placeholders while preserving markdown structure."""
     if not text:
         return ""
     
-    # Remove common placeholder patterns
+    # Remove common placeholder patterns, but preserve newlines and markdown
     lines = text.split('\n')
     cleaned_lines = []
     for line in lines:
-        line = line.strip()
-        # Skip empty lines
-        if not line:
+        line_stripped = line.strip()
+        # Skip empty lines (but we keep one to preserve paragraph breaks)
+        if not line_stripped:
+            # Only add empty line if previous line wasn't also empty (preserve single blank lines)
+            if cleaned_lines and cleaned_lines[-1] != "":
+                cleaned_lines.append("")
             continue
         # Skip lines that look like placeholders or instructional text
-        if line.startswith('*Sentence') or '(Aiming for' in line or 'placeholder' in line.lower():
+        if line_stripped.startswith('*Sentence') or '(Aiming for' in line_stripped or 'placeholder' in line_stripped.lower():
             continue
         # Skip lines that are just markdown bullet points without content
-        if line.startswith('- ') or line.startswith('* ') and len(line) <= 2:
+        if (line_stripped.startswith('- ') or line_stripped.startswith('* ')) and len(line_stripped) <= 2:
             continue
+        # Preserve original line with its indentation (important for markdown structure)
         cleaned_lines.append(line)
     
-    # Join lines and ensure we have proper sentence spacing
-    cleaned_text = ' '.join(cleaned_lines)
+    # Join with newlines to preserve markdown structure
+    cleaned_text = '\n'.join(cleaned_lines)
+    
+    # Collapse multiple consecutive blank lines to single blank line
+    import re
+    cleaned_text = re.sub(r'\n{3,}', '\n\n', cleaned_text)
     
     # Ensure we have reasonable length (if too short, might be invalid)
-    if len(cleaned_text) < 10:
+    if len(cleaned_text.strip()) < 10:
         return text  # Return original if cleaning removed too much
     
     return cleaned_text.strip()
 
 def N(readme_content: str, features: dict, prediction: int, probability: float) -> Dict[str, Any]:
     """Generate review using NVIDIA API with robust error handling and retry logic."""
+    logger.info("NVIDIA review function N() called")
     if not O:
         logger.warning("NVIDIA review skipped: openai not installed")
         return {"review": "AI review unavailable: openai not installed.", "status": "skipped", "provider": "nvidia"}
@@ -86,6 +99,8 @@ def N(readme_content: str, features: dict, prediction: int, probability: float) 
     if not k or k.strip() == "":
         logger.warning("NVIDIA review skipped: NVIDIA_API_KEY not set")
         return {"review": "AI review unavailable: NVIDIA_API_KEY not set.", "status": "skipped", "provider": "nvidia"}
+    
+    logger.info(f"NVIDIA_API_KEY found, length: {len(k)}")
     
     m = 8000
     rp = readme_content[:m]
@@ -113,6 +128,7 @@ def N(readme_content: str, features: dict, prediction: int, probability: float) 
     max_retries = 2
     for attempt in range(max_retries + 1):
         try:
+            logger.info(f"NVIDIA API call attempt {attempt + 1}/{max_retries + 1}, prompt length: {len(pt)}")
             c = OpenAI(
                 base_url="https://integrate.api.nvidia.com/v1",
                 api_key=k,
@@ -124,9 +140,11 @@ def N(readme_content: str, features: dict, prediction: int, probability: float) 
                 temperature=0.3,
                 max_tokens=10000
             )
+            logger.info(f"NVIDIA API response received, finish_reason: {resp.choices[0].finish_reason if resp.choices else 'none'}")
             if resp.choices[0].message.content:
-                cleaned_review = clean_ai_response(resp.choices[0].message.content.strip())
+                raw_response = resp.choices[0].message.content.strip()
                 logger.info(f"NVIDIA review successful on attempt {attempt + 1}")
+                cleaned_review = clean_ai_response(raw_response)
                 return {"review": cleaned_review, "status": "success", "provider": "nvidia"}
             else:
                 logger.warning("NVIDIA review received empty response")
@@ -170,12 +188,66 @@ def generate_ai_review(readme_content: str, features: dict, prediction: int, pro
     return nres
 
 def format_ai_review_for_display(ai_review_result: dict) -> str:
-    """Format AI review result for display in frontend - returns plain markdown string."""
+    """Format AI review result for display in frontend - returns markdown string with visual markers.
+    
+    Converts markdown headers (##) to bold text to prevent oversized rendering in Streamlit.
+    Adds visual markers per section and ensures bold lead phrases render correctly.
+    """
     if ai_review_result.get("status") == "success":
         prov = ai_review_result.get("provider", "unknown").upper()
         review = ai_review_result.get('review', '')
-        # The AI now returns proper markdown with ## headers and bullet points
-        # Just prepend the provider attribution
+        
+        # Convert markdown headers (##, ###) to bold text to avoid oversized h2/h3 rendering
+        import re
+        review = re.sub(r'^##\s+(.+)$', r'**\1**', review, flags=re.MULTILINE)
+        review = re.sub(r'^###\s+(.+)$', r'**\1**', review, flags=re.MULTILINE)
+        review = re.sub(r'^#\s+(.+)$', r'**\1**', review, flags=re.MULTILINE)
+        
+        # Add visual markers to bullets based on section
+        lines = review.split('\n')
+        in_key_strengths = False
+        in_gaps = False
+        formatted_lines = []
+        
+        for line in lines:
+            stripped = line.strip()
+            
+            # Track which section we're in
+            if stripped == '**Key Strengths**' or stripped == '## Key Strengths':
+                in_key_strengths = True
+                in_gaps = False
+                formatted_lines.append(line)
+                continue
+            elif stripped == '**Gaps & Missing Elements**' or stripped == '## Gaps & Missing Elements':
+                in_key_strengths = False
+                in_gaps = True
+                formatted_lines.append(line)
+                continue
+            elif stripped == '**Production Readiness Assessment**' or stripped == '## Production Readiness Assessment':
+                in_key_strengths = False
+                in_gaps = False
+                formatted_lines.append(line)
+                continue
+            elif stripped == '**Project Purpose**' or stripped == '## Project Purpose':
+                in_key_strengths = False
+                in_gaps = False
+                formatted_lines.append(line)
+                continue
+            
+            # Add visual markers to bullet points
+            if stripped.startswith('- **') or stripped.startswith('* **'):
+                if in_key_strengths:
+                    # Add green checkmark for strengths
+                    line = line.replace('- **', '✅ **', 1)
+                    line = line.replace('* **', '✅ **', 1)
+                elif in_gaps:
+                    # Add warning sign for gaps
+                    line = line.replace('- **', '⚠️ **', 1)
+                    line = line.replace('* **', '⚠️ **', 1)
+            
+            formatted_lines.append(line)
+        
+        review = '\n'.join(formatted_lines)
         return f"**AI Review** (via {prov})\n\n{review}"
     elif ai_review_result.get("status") == "skipped":
         return f"*AI review skipped: {ai_review_result.get('review', '')}*"

@@ -52,12 +52,11 @@ jobs:
           GITHUB_ACTIONS: "true"
         shell: bash
 
-      - name: Run scoring divergence test
-        run: python test_scoring_divergence.py
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
-        continue-on-error: true
+      # Scoring divergence test excluded from CI:
+# - Requires GITHUB_TOKEN for GitHub API calls to fetch real repo data
+# - GitHub Actions default GITHUB_TOKEN has strict rate limits (60 req/hr)
+# - Test hits 15 repos → would fail flakily without dedicated PAT secret
+# - Run locally with: python test_scoring_divergence.py (requires .env with GITHUB_TOKEN)
 
       - name: Check for large files (>5MB outside LFS)
         run: |

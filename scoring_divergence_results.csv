@@ -1,16 +1,16 @@
-repo,stars,forks,age_days,last_commit_days,contributors,has_ci,has_tests,readme_size,ml_score,ml_prediction,ml_probability,heuristic_score,heuristic_tier,heuristic_components,decay_factor,delta,error
-pre-commit/pre-commit-hooks,6668.0,798.0,4547.0,6.0,107.0,False,False,9208.0,35.0,0.0,0.35,87.0,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 90.0, 'contributors': 100.0}",1.0,-52.0,
-psf/requests,54256.0,10100.0,5671.0,0.0,402.0,False,False,2906.0,39.5,0.0,0.395,84.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 80.0, 'contributors': 100.0}",1.0,-45.0,
-pallets/flask,72147.0,16946.0,5984.0,8.0,400.0,False,False,1639.0,49.0,0.0,0.49,84.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 80.0, 'contributors': 100.0}",1.0,-35.5,
-django/django,88923.0,34172.0,5231.0,0.0,391.0,False,False,2179.0,50.0,0.0,0.5,84.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 80.0, 'contributors': 100.0}",1.0,-34.5,
-pytest-dev/pytest,14441.0,3320.0,4087.0,0.0,382.0,False,True,5454.0,58.5,1.0,0.585,89.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 100.0, 'contributors': 100.0}",1.0,-31.0,
-tiangolo/fastapi,,,,,,,,,,,,,,,,,"HTTPSConnectionPool(host='api.github.com', port=443): Read timed out. (read timeout=None)"
-encode/httpx,15431.0,1257.0,2699.0,148.0,230.0,True,False,4944.0,60.0,1.0,0.6,88.0,A,"{'maintenance': 60.0, 'community': 100.0, 'documentation': 100.0, 'contributors': 100.0}",1.0,-28.0,
-ansible/ansible,70448.0,24320.0,5284.0,5.0,372.0,False,False,6154.0,59.0,1.0,0.59,85.75,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 85.0, 'contributors': 100.0}",1.0,-26.75,
-kubernetes/kubernetes,125104.0,43914.0,4461.0,3.0,350.0,False,False,4387.0,58.5,1.0,0.585,84.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 80.0, 'contributors': 100.0}",1.0,-26.0,
-golang/go,136392.0,19298.0,4388.0,0.0,381.0,False,False,1454.0,41.0,0.0,0.41,84.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 80.0, 'contributors': 100.0}",1.0,-43.5,
-numpy/numpy,32596.0,12671.0,5823.0,0.0,439.0,False,False,4411.0,58.5,1.0,0.585,83.25,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 75.0, 'contributors': 100.0}",1.0,-24.75,
-scipy/scipy,14950.0,5879.0,5647.0,0.0,415.0,False,False,3911.0,59.5,1.0,0.595,84.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 80.0, 'contributors': 100.0}",1.0,-25.0,
-facebook/react,247855.0,51252.0,4840.0,0.0,410.0,True,False,5317.0,62.0,1.0,0.62,89.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 100.0, 'contributors': 100.0}",1.0,-27.5,
-vuejs/vue,210663.0,33752.0,4774.0,683.0,354.0,False,False,7874.0,66.0,1.0,0.66,38.25,F,"{'maintenance': 15.0, 'community': 50.0, 'documentation': 45.0, 'contributors': 50.0}",0.5,27.75,
-rust-lang/rust,116143.0,15455.0,5912.0,0.0,443.0,False,False,3304.0,66.5,1.0,0.665,84.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 80.0, 'contributors': 100.0}",1.0,-18.0,
+repo,stars,forks,age_days,last_commit_days,contributors,has_ci,has_tests,readme_size,ml_score,ml_prediction,ml_probability,heuristic_score,heuristic_tier,heuristic_components,decay_factor,delta
+pre-commit/pre-commit-hooks,6673,798,4550,10,107,False,False,9208,34.0,0,0.34,87.0,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 90.0, 'contributors': 100.0}",1.0,-53.0
+psf/requests,54254,10105,5674,3,401,False,False,2906,39.0,0,0.39,84.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 80.0, 'contributors': 100.0}",1.0,-45.5
+pallets/flask,72145,16950,5987,11,400,False,False,1639,48.5,0,0.485,84.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 80.0, 'contributors': 100.0}",1.0,-36.0
+django/django,89028,34200,5235,0,391,False,False,2179,50.0,0,0.5,84.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 80.0, 'contributors': 100.0}",1.0,-34.5
+pytest-dev/pytest,14453,3330,4091,0,383,False,True,5454,58.5,1,0.585,89.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 100.0, 'contributors': 100.0}",1.0,-31.0
+tiangolo/fastapi,101892,9823,2819,1,457,False,False,22780,75.0,1,0.75,87.0,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 90.0, 'contributors': 100.0}",1.0,-12.0
+encode/httpx,15449,1263,2702,152,230,True,False,4944,60.0,1,0.6,88.0,A,"{'maintenance': 60.0, 'community': 100.0, 'documentation': 100.0, 'contributors': 100.0}",1.0,-28.0
+ansible/ansible,70485,24327,5287,0,372,False,False,6154,60.0,1,0.6,85.75,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 85.0, 'contributors': 100.0}",1.0,-25.75
+kubernetes/kubernetes,125308,43935,4465,0,350,False,False,4236,58.0,1,0.58,84.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 80.0, 'contributors': 100.0}",1.0,-26.5
+golang/go,136552,19311,4392,0,381,False,False,1454,41.0,0,0.41,84.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 80.0, 'contributors': 100.0}",1.0,-43.5
+numpy/numpy,32616,12684,5827,0,439,False,False,4411,58.5,1,0.585,83.25,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 75.0, 'contributors': 100.0}",1.0,-24.75
+scipy/scipy,14961,5887,5650,0,415,False,False,3911,59.5,1,0.595,84.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 80.0, 'contributors': 100.0}",1.0,-25.0
+facebook/react,247989,51255,4843,1,410,True,False,5317,62.0,1,0.62,89.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 100.0, 'contributors': 100.0}",1.0,-27.5
+vuejs/vue,210753,33746,4778,686,354,False,False,7874,66.0,1,0.66,38.25,F,"{'maintenance': 15.0, 'community': 50.0, 'documentation': 45.0, 'contributors': 50.0}",0.5,27.75
+rust-lang/rust,116302,15471,5916,0,443,False,False,3304,66.5,1,0.665,84.5,A,"{'maintenance': 65.0, 'community': 100.0, 'documentation': 80.0, 'contributors': 100.0}",1.0,-18.0
