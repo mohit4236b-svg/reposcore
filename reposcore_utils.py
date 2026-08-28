@@ -111,13 +111,19 @@ def fetch_repo_features(full_name, headers=None):
     except Exception:
         pass  # Don't fail if contributor fetch fails
 
-    # Detect CI from topics and repo info
+    # Detect CI from .github/workflows directory (matching training pipeline)
+    ci_resp = requests.get(f"https://api.github.com/repos/{full_name}/contents/.github/workflows", headers=headers)
+    has_ci = ci_resp.status_code == 200
+
+    # Detect tests from tests/ directory (matching training pipeline)
+    tests_resp = requests.get(f"https://api.github.com/repos/{full_name}/contents/tests", headers=headers)
+    has_tests = tests_resp.status_code == 200
+
+    # Detect license from repo.license field (MISSING in original)
+    has_license = repo.get("license") is not None
+
+    # Get topics for TF-IDF vectorization
     topics = repo.get("topics", []) or []
-    has_ci = any(t in topics for t in ["ci", "github-actions", "workflows", "circleci", "travis-ci", "codecov"])
-    has_pages = repo.get("has_pages", False)
-    
-    # Detect tests from topics
-    has_tests = any(t in topics for t in ["tests", "test", "testing", "pytest", "unittest"])
 
     created_at = pd.to_datetime(repo["created_at"])
     pushed_at_raw = repo.get("pushed_at")
@@ -140,8 +146,9 @@ def fetch_repo_features(full_name, headers=None):
         "repo_age_days": (now - created_at).days,
         "last_commit_days": int((now - pushed_at).days) if pd.notna((now - pushed_at).days) else 9999,
         "has_readme": int(has_readme),
-        "has_ci": has_ci or has_pages,
+        "has_ci": has_ci,
         "has_tests": has_tests,
+        "has_license": has_license,
         "total_contributors": total_contributors,
     }
 

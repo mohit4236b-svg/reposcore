@@ -89,10 +89,8 @@ def analyze_repository_async(self, owner: str, repo: str, token: Optional[str] =
         # Step 2: Process large datasets in chunks
         update_worker_status(job_id, "processing", "Analyzing issues and commits...", 40)
         
-        # Detect CI and tests
-        topics = features.get("topics", [])
-        features["has_ci"] = features.get("has_ci", any(t in topics for t in ["ci", "github-actions"]))
-        features["has_tests"] = features.get("has_tests", any(t in topics for t in ["tests", "pytest"]))
+        # Features already have correct has_ci, has_tests, has_license from fetch_repo_features
+        # No need for topics-based fallback - fetch_repo_features now checks actual dirs
         features["total_contributors"] = features.get("total_contributors", 1)
         
         # Step 3: Calculate score
