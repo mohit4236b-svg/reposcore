@@ -137,7 +137,7 @@ After removing badge markup, repo activity signals (`stars`, `days_since_last_co
 
 ## Known limitations
 
-- **Recall at the default threshold (0.893 CV, 0.50 held-out) is much improved** — the model now catches ~89% of true "quality" repos at the default 0.3 cutoff (F1=0.762). This turned out to be a threshold choice, not a fixed ceiling: the default 0.3 is F1-optimal. 5-fold CV across thresholds:
+- **Recall at the default threshold (0.893 CV, 0.50 held-out) is much improved** � the model now catches ~89% of true "quality" repos at the default 0.3 cutoff (F1=0.762). This turned out to be a threshold choice, not a fixed ceiling: the default 0.3 is F1-optimal. 5-fold CV across thresholds:
 
   | Threshold | Precision | Recall | F1 |
   |---|---|---|---|
@@ -147,12 +147,13 @@ After removing badge markup, repo activity signals (`stars`, `days_since_last_co
   | 0.6 | 0.983 | 0.267 | 0.420 |
   | 0.7 | 1.000 | 0.121 | 0.216 |
 
-  F1 actually peaks around 0.3, not 0.5. Which threshold is "right" depends on the cost of a false negative vs. a false positive for your use case — there's a slider in the Streamlit app and a `--threshold` flag on the CLI to choose (see below) rather than a single hardcoded cutoff.
-- **Topic tags gave only a modest improvement** and didn't produce any single feature in the top 20 — likely because topic information overlaps with vocabulary already present in README text.
+  F1 actually peaks around 0.3, not 0.5. Which threshold is "right" depends on the cost of a false negative vs. a false positive for your use case � there's a slider in the Streamlit app and a --threshold flag on the CLI to choose (see below) rather than a single hardcoded cutoff.
+- **Topic tags gave only a modest improvement** and didn't produce any single feature in the top 20 � likely because topic information overlaps with vocabulary already present in README text.
 - **"Quality" is a proxy, not a ground truth.** Stars-per-month rewards popularity, which correlates with but doesn't equal code quality. A well-written internal tool with few stars would be scored "not quality" here.
 - **Badge stripping is regex-based, not exhaustive.** It targets shields.io, badge.fury.io, and similarly-structured badge hosts/markdown patterns; some CI-signal likely still leaks through badge formats the regex doesn't cover.
-- **No temporal validation.** The dataset is a single point-in-time snapshot; there's no check for how well the model generalizes to repos created after collection, or to topics outside the five collected here.
-- **Confidence score is under-calibrated at the high end.** Brier score is 0.115 (0=perfect, 0.25=random-guessing baseline), so it's meaningfully better than chance overall — but checking predicted-vs-observed in bins shows the model is somewhat *under*-confident on likely-quality repos (when it says ~60% confidence, the true rate in that bin is closer to 83%) and reasonably calibrated in the low range. Read the confidence score as directionally useful, not as a literal probability.
+- **No temporal validation:** The training dataset is a single point-in-time snapshot across a limited set of ML-focused topics. The model has not been evaluated on newer repositories or different domains, so generalization beyond the training distribution is unverified.
+- **Single-model deployment:** The system serves a single trained Random Forest artifact with no model versioning, A/B testing, or automatic fallback if the model fails to load. A model-loading failure would need manual intervention.
+- **Confidence score is under-calibrated at the high end.** Brier score is 0.115 (0=perfect, 0.25=random-guessing baseline), so it's meaningfully better than chance overall � but checking predicted-vs-observed in bins shows the model is somewhat *under*-confident on likely-quality repos (when it says ~60% confidence, the true rate in that bin is closer to 83%) and reasonably calibrated in the low range. Read the confidence score as directionally useful, not as a literal probability.
 
 ## What this would need to become production-grade
 
@@ -204,24 +205,17 @@ venv\Scripts\activate       # Windows
 pip install -r requirements.txt
 ```
 
-Create a `.env` file with your own GitHub personal access token:
+Create a `.env` file with your own GitHub personal access token (optional but recommended):
  ```
- GITHUB_TOKEN=your_token_here
- GEMINI_API_KEY=your_gemini_api_key_here
+GITHUB_TOKEN=your_token_here
+GEMINI_API_KEY=your_gemini_api_key_here
  ```
+
+Without `GITHUB_TOKEN`, the GitHub API rate limit is 60 requests per hour; with a token it increases to 5,000 per hour.
 
  **Important for Streamlit Cloud deployment:** The live demo at [reposcoree.streamlit.app](https://reposcoree.streamlit.app) will exceed the 60 req/hour unauthenticated limit quickly, causing it to fail on many repos. To deploy your own instance or ensure the demo works reliably for local testing, set `GITHUB_TOKEN` and `GEMINI_API_KEY` in:
  - **Local `.env` file** (shown above), or
- - **Streamlit Cloud secrets**: In your app's settings → Secrets → add both `GITHUB_TOKEN=your_token_here` and `GEMINI_API_KEY=your_key_here`
-
-Run the demo (uses the pre-trained model):
-```bash
-streamlit run app.py
-```
-
-To retrain from scratch, run the scripts in `notebooks/` in order (collection → enrichment → README fetch → topics → dataset build → training).
-
-> **Note on model artifacts:** The pre-trained model files in `models/` (`rf_model.pkl`, `tfidf_readme.pkl`, `tfidf_topics.pkl`, `scaler.pkl`) are tracked via Git LFS. They are generated by `notebooks/train_model.py` from the dataset (`models/repos_final_with_topics.csv`), which is a ~200MB intermediate file also produced by the notebook pipeline and intentionally excluded from this repo. To regenerate the model artifacts, run the full pipeline in `notebooks/`, then run `python notebooks/train_model.py`.
+ - **Streamlit Cloud secrets**: In your app's settings \u2192 Secrets \u2192 add both `GITHUB_TOKEN=your_token_here` and `GEMINI_API_KEY=your_gemini_api_key_here`
 
 ## CLI usage
 
@@ -246,6 +240,10 @@ pytest tests/ -v
 ```
 
 Tests run automatically on every push/PR via GitHub Actions (see `.github/workflows/ci.yml`). They cover the badge-stripping preprocessing step (the fix for the leakage bug described above) and the CLI's error handling, since silent regressions in either would be easy to miss otherwise.
+
+## Test Coverage
+
+The test suite covers model loading, prediction validity/range checks, and FastAPI endpoint tests (health, job submission, score retrieval, badge generation). It does not include exhaustive coverage of all edge cases or UI components.
 
 ## How this compares to similar tools
 
@@ -316,3 +314,4 @@ To run manually:
 ```bash
 python test_scoring_divergence.py
 ```
+
