@@ -229,13 +229,14 @@ def check_exceptions(features):
     return exceptions
 
 
-def log_audit_trail(features, probability, prediction, threshold):
+def log_audit_trail(features, probability, prediction, threshold, caveats=None):
     """
     Log scoring decision to CSV file for audit trail.
     Records: repo identifier, input features used, score, timestamp.
     """
     import csv
     import os
+    import json
     from datetime import datetime
 
     # Create audit trail directory if it doesn't exist
@@ -301,7 +302,14 @@ def log_audit_trail(features, probability, prediction, threshold):
             "prediction": logged_features["prediction"],
             "threshold": logged_features["threshold"]
         })
-
+    # Also log to JSON Lines file
+    jsonl_file = os.path.join(audit_dir, "predictions.jsonl")
+    # Add caveats to the logged features for JSON Lines
+    logged_features_with_caveats = logged_features.copy()
+    logged_features_with_caveats["caveats"] = caveats if caveats is not None else []
+    with open(jsonl_file, "a", encoding="utf-8") as f:
+        json.dump(logged_features_with_caveats, f)
+        f.write("\n")
 
 rf_model, tfidf_readme, tfidf_topics, scaler = load_ml_assets()
 
@@ -337,7 +345,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
 
             # Log to audit trail
-            log_audit_trail(features, probability, prediction, threshold)
+            log_audit_trail(features, probability, prediction, threshold, caveats=warning_messages)
             # Check for exceptions and low confidence
             exceptions = check_exceptions(features)
             low_confidence = 0.4 <= probability <= 0.6  # Model uncertainty band
