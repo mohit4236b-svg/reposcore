@@ -113,10 +113,22 @@ def fetch_repo_features(full_name, headers=None):
 
     # Detect CI from .github/workflows directory (matching training pipeline)
     ci_resp = requests.get(f"https://api.github.com/repos/{full_name}/contents/.github/workflows", headers=headers)
+    if ci_resp.status_code == 403:
+        retry_after = int(ci_resp.headers.get("Retry-After", 60))
+        raise RateLimitedRepoFetchError(
+            "GitHub API rate limit exceeded while checking CI workflows. Set GITHUB_TOKEN to increase the limit.",
+            retry_after=retry_after
+        )
     has_ci = ci_resp.status_code == 200
 
     # Detect tests from tests/ directory (matching training pipeline)
     tests_resp = requests.get(f"https://api.github.com/repos/{full_name}/contents/tests", headers=headers)
+    if tests_resp.status_code == 403:
+        retry_after = int(tests_resp.headers.get("Retry-After", 60))
+        raise RateLimitedRepoFetchError(
+            "GitHub API rate limit exceeded while checking tests directory. Set GITHUB_TOKEN to increase the limit.",
+            retry_after=retry_after
+        )
     has_tests = tests_resp.status_code == 200
 
     # Detect license from repo.license field (MISSING in original)
@@ -124,10 +136,22 @@ def fetch_repo_features(full_name, headers=None):
 
     # Detect CONTRIBUTING.md in repo root (case-insensitive via GitHub API)
     contributing_resp = requests.get(f"https://api.github.com/repos/{full_name}/contents/CONTRIBUTING.md", headers=headers)
+    if contributing_resp.status_code == 403:
+        retry_after = int(contributing_resp.headers.get("Retry-After", 60))
+        raise RateLimitedRepoFetchError(
+            "GitHub API rate limit exceeded while checking CONTRIBUTING.md. Set GITHUB_TOKEN to increase the limit.",
+            retry_after=retry_after
+        )
     has_contributing = contributing_resp.status_code == 200
 
     # Detect CODE_OF_CONDUCT.md in repo root (case-insensitive via GitHub API)
     coc_resp = requests.get(f"https://api.github.com/repos/{full_name}/contents/CODE_OF_CONDUCT.md", headers=headers)
+    if coc_resp.status_code == 403:
+        retry_after = int(coc_resp.headers.get("Retry-After", 60))
+        raise RateLimitedRepoFetchError(
+            "GitHub API rate limit exceeded while checking CODE_OF_CONDUCT.md. Set GITHUB_TOKEN to increase the limit.",
+            retry_after=retry_after
+        )
     has_code_of_conduct = coc_resp.status_code == 200
 
     # Get topics for TF-IDF vectorization
