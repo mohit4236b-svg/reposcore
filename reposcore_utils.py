@@ -167,11 +167,20 @@ def fetch_repo_features(full_name, headers=None):
     created_at = pd.to_datetime(repo["created_at"])
     pushed_at_raw = repo.get("pushed_at")
     if pushed_at_raw is None:
-        # Empty repo with no commits - use created_at as fallback, or a large default
         pushed_at = pd.to_datetime(repo["created_at"])
     else:
         pushed_at = pd.to_datetime(pushed_at_raw)
     now = pd.Timestamp.now(tz="UTC")
+
+    license_data = repo.get("license")
+    _license_data = None
+    if license_data:
+        _license_data = {
+            "key": license_data.get("key"),
+            "name": license_data.get("name"),
+            "spdx_id": license_data.get("spdx_id"),
+            "url": license_data.get("url"),
+        }
 
     return {
         "full_name": repo["full_name"],
@@ -191,6 +200,7 @@ def fetch_repo_features(full_name, headers=None):
         "has_contributing": has_contributing,
         "has_code_of_conduct": has_code_of_conduct,
         "total_contributors": total_contributors,
+        "_license_data": _license_data,
     }
 
 
