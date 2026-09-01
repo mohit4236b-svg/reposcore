@@ -771,7 +771,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
                                     st.json(json.loads(report_content))
                                 else:
                                     st.markdown("### Report Preview")
-                                    st.markdown(report_content, unsafe_allow_html=True)
+                                    st.components.v1.html(report_content, height=600, scrolling=True)
                                     
                                     report_bytes = report_content.encode()
                                     st.download_button(
