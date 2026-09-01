@@ -13,6 +13,7 @@ import tempfile
 import shutil
 import os
 import time
+import math
 
 # Strips markdown image/badge syntax, shields.io/badge-service URLs, and
 # common CI/build/status badge hosts. This exists because has_ci/has_tests
@@ -310,17 +311,13 @@ def extract_code_metrics(repo_path: str) -> dict | None:
         from radon.metrics import mi_visit
         import ast
     except ImportError:
-        # Radon not installed
         return None
     
-    # Set timeout for radon analysis (15 seconds)
     start_time = time.time()
     
     try:
-        # Find all Python files
         py_files = []
         for root, dirs, files in os.walk(repo_path):
-            # Skip common non-source directories
             dirs[:] = [d for d in dirs if not d.startswith('.') and d not in ['__pycache__', 'node_modules', 'venv', 'env', 'build', 'dist']]
             for file in files:
                 if file.endswith('.py'):
@@ -329,32 +326,29 @@ def extract_code_metrics(repo_path: str) -> dict | None:
         if not py_files:
             return {"file_count": 0, "avg_complexity": 0, "total_loc": 0}
         
-        # Initialize metrics
         total_loc = 0
         total_complexity = 0
         complexity_count = 0
+        total_functions = 0
+        total_classes = 0
         
-        # Analyze each Python file
         for py_file in py_files:
             try:
-                # Check timeout
                 if time.time() - start_time > 15:
                     break
                     
                 with open(py_file, 'r', encoding='utf-8', errors='ignore') as f:
                     content = f.read()
                 
-                # Skip empty files
                 if not content.strip():
                     continue
                 
-                # Raw metrics (lines of code, etc.)
                 raw_metrics = raw_analyze(content)
-                total_loc += raw_metrics.loc  # Lines of code
+                total_loc += raw_metrics.loc
+                total_functions += raw_metrics.functions
+                total_classes += raw_metrics.classes
                 
-                # Cyclomatic complexity
                 try:
-                    # Parse the file to check for syntax errors first
                     tree = ast.parse(content)
                     complexity_blocks = cc_visit(tree)
                     
@@ -362,29 +356,282 @@ def extract_code_metrics(repo_path: str) -> dict | None:
                         total_complexity += block.complexity
                         complexity_count += 1
                 except SyntaxError:
-                    # Skip files with syntax errors
                     continue
                     
             except Exception:
-                # Skip individual file errors
                 continue
             
-            # Check timeout again
             if time.time() - start_time > 15:
                 break
         
-        # Calculate average complexity
         avg_complexity = total_complexity / max(complexity_count, 1)
         
         return {
             "file_count": len(py_files),
             "avg_complexity": round(avg_complexity, 2),
-            "total_loc": total_loc
+            "total_loc": total_loc,
+            "total_functions": total_functions,
+            "total_classes": total_classes,
+            "maintainability_index": calculate_maintainability_index(total_loc, complexity_count, total_complexity)
         }
         
     except Exception:
-        # Radon analysis failed
         return None
-    finally:
-        # Ensure cleanup happens even on unexpected errors
+
+
+def calculate_maintainability_index(total_loc: int, function_count: int, total_complexity: float) -> float:
+    """
+    Calculate Maintainability Index (MI) based on Halstead metrics.
+    
+    MI = 171 - 5.2 * ln(HV) - 0.23 * ln(CC) - 16.2 * ln(LOC)
+    where HV = Halstead Volume, CC = Cyclomatic Complexity, LOC = Lines of Code
+    
+    Returns:
+        MI score between 0-100 (higher is better)
+    """
+    if total_loc == 0 or function_count == 0:
+        return 0.0
+    
+    loc = float(total_loc)
+    cc = float(total_complexity)
+    
+    mi = 171 - 5.2 * math.log(max(1, loc * math.log(max(1, cc + 1)))) - 0.23 * math.log(max(1, cc)) - 16.2 * math.log(max(1, loc))
+    
+    mi = max(0, min(100, mi * 100 / 171))
+    
+    return round(mi, 1)
+
+
+def detect_test_coverage(repo_path: str) -> dict:
+    """
+    Detect test frameworks and estimate test coverage.
+    
+    Args:
+        repo_path: Path to cloned repository
+        
+    Returns:
+        Dictionary with test detection results
+    """
+    test_frameworks = {
+        "pytest": ["pytest.ini", "conftest.py", "tests/", "test_", "_test.py"],
+        "unittest": ["unittest", "TestCase"],
+        "jest": ["jest.config", "package.json"],
+        "mocha": ["mocha.opts", ".mocharc"],
+        "rspec": ["spec/", "_spec.rb"],
+        "go_test": ["_test.go"],
+        "junit": ["pom.xml", "build.gradle", "testng.xml"],
+    }
+    
+    detected_frameworks = []
+    test_files = 0
+    source_files = 0
+    
+    test_extensions = {".py", ".js", ".ts", ".jsx", ".tsx", ".rb", ".go", ".java", ".cs"}
+    source_extensions = {".py", ".js", ".ts", ".jsx", ".tsx", ".rb", ".go", ".java", ".cs", ".cpp", ".c", ".h"}
+    
+    for root, dirs, files in os.walk(repo_path):
+        dirs[:] = [d for d in dirs if not d.startswith('.') and d not in ['__pycache__', 'node_modules', 'venv', 'env', 'build', 'dist', '.git']]
+        
+        for file in files:
+            file_lower = file.lower()
+            full_path = os.path.join(root, file)
+            
+            for framework, indicators in test_frameworks.items():
+                if any(ind in file_lower for ind in indicators):
+                    if framework not in detected_frameworks:
+                        detected_frameworks.append(framework)
+            
+            _, ext = os.path.splitext(file)
+            if ext in test_extensions:
+                if "test" in file_lower or "spec" in file_lower:
+                    test_files += 1
+                elif ext in {".js", ".ts", ".jsx", ".tsx", ".py"}:
+                    if not file.startswith("_") and "test" not in root.lower() and "spec" not in root.lower():
+                        source_files += 1
+            elif ext in source_extensions:
+                source_files += 1
+    
+    coverage_ratio = (test_files / max(source_files, 1)) * 100
+    coverage_level = "unknown"
+    if coverage_ratio >= 80:
+        coverage_level = "excellent"
+    elif coverage_ratio >= 60:
+        coverage_level = "good"
+    elif coverage_ratio >= 40:
+        coverage_level = "moderate"
+    elif coverage_ratio >= 20:
+        coverage_level = "low"
+    elif test_files > 0:
+        coverage_level = "minimal"
+    else:
+        coverage_level = "none"
+    
+    return {
+        "has_tests": test_files > 0,
+        "test_file_count": test_files,
+        "source_file_count": source_files,
+        "coverage_ratio": round(coverage_ratio, 1),
+        "coverage_level": coverage_level,
+        "detected_frameworks": detected_frameworks,
+        "needs_tests": test_files == 0 and source_files > 10
+    }
+
+
+def detect_documentation_quality(repo_path: str) -> dict:
+    """
+    Detect documentation files and quality indicators.
+    
+    Args:
+        repo_path: Path to cloned repository
+        
+    Returns:
+        Dictionary with documentation quality indicators
+    """
+    doc_files = {
+        "readme": ["README.md", "README.txt", "README.rst", "README"],
+        "contributing": ["CONTRIBUTING.md", "CONTRIBUTING.txt", "CONTRIBUTING"],
+        "changelog": ["CHANGELOG.md", "CHANGELOG.txt", "CHANGELOG", "HISTORY.md"],
+        "license": ["LICENSE", "LICENSE.txt", "LICENSE.md", "COPYING"],
+        "code_of_conduct": ["CODE_OF_CONDUCT.md", "CODE_OF_CONDUCT"],
+        "api_docs": ["API.md", "API.rst", "docs/API"],
+        "architecture": ["ARCHITECTURE.md", "ARCHITECTURE.txt", "docs/architecture"],
+    }
+    
+    detected_docs = {}
+    
+    for root, dirs, files in os.walk(repo_path):
+        dirs[:] = [d for d in dirs if not d.startswith('.') and d not in ['__pycache__', 'venv', 'env', 'node_modules']]
+        
+        for doc_type, filenames in doc_files.items():
+            if doc_type not in detected_docs:
+                for file in files:
+                    if file in filenames or file.upper() in [f.upper() for f in filenames]:
+                        file_path = os.path.join(root, file)
+                        try:
+                            size = os.path.getsize(file_path)
+                            detected_docs[doc_type] = {"found": True, "size": size, "path": os.path.relpath(file_path, repo_path)}
+                        except OSError:
+                            detected_docs[doc_type] = {"found": True, "size": 0, "path": os.path.relpath(file_path, repo_path)}
+                        break
+    
+    for doc_type in doc_files:
+        if doc_type not in detected_docs:
+            detected_docs[doc_type] = {"found": False, "size": 0, "path": None}
+    
+    doc_score = sum(1 for d in detected_docs.values() if d["found"]) * 100 / len(doc_files)
+    
+    docstring_count = 0
+    total_functions = 0
+    
+    for root, dirs, files in os.walk(repo_path):
+        dirs[:] = [d for d in dirs if not d.startswith('.') and d not in ['__pycache__', 'venv', 'env']]
+        for file in files:
+            if file.endswith('.py'):
+                file_path = os.path.join(root, file)
+                try:
+                    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                        content = f.read()
+                    
+                    import ast
+                    try:
+                        tree = ast.parse(content)
+                        for node in ast.walk(tree):
+                            if isinstance(node, (ast.FunctionDef, ast.ClassDef, ast.AsyncFunctionDef)):
+                                total_functions += 1
+                                if ast.get_docstring(node):
+                                    docstring_count += 1
+                    except SyntaxError:
+                        continue
+                except Exception:
+                    continue
+    
+    docstring_ratio = (docstring_count / max(total_functions, 1)) * 100 if total_functions > 0 else 0
+    
+    return {
+        "detected_docs": detected_docs,
+        "doc_score": round(doc_score, 1),
+        "docstring_count": docstring_count,
+        "total_functions": total_functions,
+        "docstring_ratio": round(docstring_ratio, 1),
+        "needs_docs": doc_score < 50
+    }
+
+
+def get_dependencies(repo_path: str) -> dict:
+    """
+    Get dependency information from repository.
+    
+    Args:
+        repo_path: Path to cloned repository
+        
+    Returns:
+        Dictionary with dependency information
+    """
+    dep_files = {
+        "requirements.txt": [],
+        "package.json": None,
+        "pyproject.toml": None,
+        "setup.py": None,
+        "Pipfile": None,
+        "go.mod": None,
+        "Cargo.toml": None,
+    }
+    
+    for root, dirs, files in os.walk(repo_path):
+        dirs[:] = [d for d in dirs if not d.startswith('.') and d not in ['__pycache__', 'venv', 'env', 'node_modules']]
+        
+        for file in files:
+            if file in dep_files:
+                file_path = os.path.join(root, file)
+                rel_path = os.path.relpath(file_path, repo_path)
+                
+                if file == "requirements.txt":
+                    deps = parse_requirements_file(file_path)
+                    dep_files["requirements.txt"] = deps
+                else:
+                    try:
+                        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                            content = f.read()
+                        dep_files[file] = {"path": rel_path, "size": len(content), "content_preview": content[:500]}
+                    except Exception:
+                        dep_files[file] = {"path": rel_path, "error": "Could not read file"}
+    
+    has_deps = any(v for k, v in dep_files.items() if v and k != "requirements.txt")
+    dep_count = len(dep_files["requirements.txt"]) if dep_files["requirements.txt"] else 0
+    
+    return {
+        "has_dependencies": dep_count > 0 or has_deps,
+        "dependency_files": {k: v for k, v in dep_files.items() if v},
+        "requirements_count": dep_count
+    }
+
+
+def parse_requirements_file(file_path: str) -> list:
+    """Parse requirements.txt file."""
+    import re
+    packages = []
+    
+    try:
+        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith('#') or line.startswith('-'):
+                    continue
+                
+                match = re.match(r'^([a-zA-Z0-9_-]+)([=<>!~]+)(.+)$', line)
+                if match:
+                    packages.append({
+                        "name": match.group(1),
+                        "version_spec": match.group(2) + match.group(3)
+                    })
+                else:
+                    match_name = re.match(r'^([a-zA-Z0-9_-]+)', line)
+                    if match_name:
+                        packages.append({
+                            "name": match_name.group(1),
+                            "version_spec": "unspecified"
+                        })
+    except Exception:
         pass
+    
+    return packages

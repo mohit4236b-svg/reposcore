@@ -464,7 +464,9 @@ if st.button("Predict Quality", type="primary") and repo_input:
             render_verdict_banner(prediction, probability)
 
             # --- TABS FOR DETAILED SECTIONS ---
-            tab_overview, tab_why, tab_ai = st.tabs(["📊 Overview", "🔍 Why This Score?", "🤖 AI Review"])
+            tab_overview, tab_why, tab_ai, tab_security, tab_trends, tab_report = st.tabs(
+                ["📊 Overview", "🔍 Why This Score?", "🤖 AI Review", "🔒 Security", "📈 Trends", "📄 Report"]
+            )
 
             # ==================== TAB 1: OVERVIEW ====================
             with tab_overview:
@@ -628,10 +630,8 @@ if st.button("Predict Quality", type="primary") and repo_input:
                 st.markdown("<h3 class=\"section-header\">AI Review</h3>", unsafe_allow_html=True)
                 if AI_REVIEW_AVAILABLE:
                     try:
-                        # Cached AI review to avoid repeated API calls for same repo
                         @st.cache_data(ttl=86400, show_spinner=False)
                         def _cached_ai_review(readme_text_clean: str, features_hashable: tuple, prediction: int, probability: float):
-                            # Rebuild features dict from hashable tuple
                             features_dict = dict(features_hashable)
                             return generate_ai_review(
                                 readme_content=readme_text_clean,
@@ -645,14 +645,157 @@ if st.button("Predict Quality", type="primary") and repo_input:
                         ai_result = _cached_ai_review(readme_text, features_hashable, prediction, probability)
 
                         if ai_result.get("status") == "success":
-                            # Use native Streamlit container + markdown for proper rendering
                             with st.container(border=True):
                                 st.markdown(format_ai_review_for_display(ai_result))
                         else:
-                            # FIX: Use st.error instead of st.caption for better visibility
                             st.error(format_ai_review_for_display(ai_result))
                     except Exception as err:
-                        # FIX: Use st.error instead of st.caption for better visibility
                         st.error(f"AI review unavailable: {str(err)}")
                 else:
                     st.caption("AI review unavailable: ai_review module not found.")
+
+            # ==================== TAB 4: SECURITY ====================
+            with tab_security:
+                st.markdown("<h3 class=\"section-header\">🔒 Security Analysis</h3>", unsafe_allow_html=True)
+                
+                try:
+                    from security_scanner import scan_repository, get_vulnerability_summary
+                    from reposcore_utils import clone_repo_bounded
+                    import shutil
+                    
+                    repo_size_kb = features.get("size", 0) if "size" in features else 1000
+                    repo_path = clone_repo_bounded(repo_input, repo_size_kb)
+                    
+                    if repo_path:
+                        try:
+                            scan_result = scan_repository(repo_path)
+                            
+                            vuln_col1, vuln_col2, vuln_col3, vuln_col4 = st.columns(4)
+                            vuln_col1.metric("Total", scan_result.total_vulnerabilities)
+                            vuln_col2.metric("Critical", scan_result.critical_count, 
+                                           delta="🔴" if scan_result.critical_count > 0 else None)
+                            vuln_col3.metric("High", scan_result.high_count,
+                                           delta="🟠" if scan_result.high_count > 0 else None)
+                            vuln_col4.metric("Medium", scan_result.medium_count)
+                            
+                            risk_color = {"CRITICAL": "🔴", "HIGH": "🟠", "MEDIUM": "🟡", "LOW": "🟢", "NONE": "✅"}
+                            st.markdown(f"**Risk Level:** {risk_color.get(scan_result.risk_level, '⚪')} {scan_result.risk_level}")
+                            
+                            st.markdown(f"**Scan Method:** {scan_result.scan_method}")
+                            st.markdown(f"**Dependencies Found:** {scan_result.dependencies_found}")
+                            
+                            if scan_result.vulnerabilities:
+                                st.markdown("**Vulnerabilities Detected:**")
+                                for vuln in scan_result.vulnerabilities[:10]:
+                                    with st.expander(f"{vuln.package_name} ({vuln.severity.value})"):
+                                        st.markdown(f"**Version:** {vuln.version}")
+                                        st.markdown(f"**ID:** {vuln.vulnerability_id}")
+                                        st.markdown(f"**Description:** {vuln.description[:200]}...")
+                                        if vuln.fix_version:
+                                            st.markdown(f"**Fix Version:** {vuln.fix_version}")
+                            else:
+                                st.success("No vulnerabilities detected! ✅")
+                        finally:
+                            shutil.rmtree(repo_path, ignore_errors=True)
+                    else:
+                        st.warning("Repository too large to scan for vulnerabilities (max 50MB)")
+                        
+                except ImportError:
+                    st.caption("Security scanner not available")
+                except Exception as err:
+                    st.error(f"Security scan failed: {str(err)}")
+                
+                st.divider()
+                
+                st.markdown("<h4 class=\"section-header\">📜 License Check</h4>", unsafe_allow_html=True)
+                try:
+                    from license_checker import check_license_from_repo
+                    
+                    lic_result = check_license_from_repo(None, repo_data=features.get("_license_data"))
+                    
+                    lic_col1, lic_col2 = st.columns(2)
+                    lic_col1.markdown(f"**License:** {lic_result.license_info.name if lic_result.license_info else 'Unknown'}")
+                    lic_col1.markdown(f"**SPDX:** {lic_result.license_info.spdx_id if lic_result.license_info else 'NOASSERTION'}")
+                    lic_col2.markdown(f"**Compliance Score:** {lic_result.compliance_score}/100")
+                    lic_col2.markdown(f"**Commercial Compatible:** {'✅ Yes' if lic_result.commercial_compatible else '❌ No'}")
+                    
+                    if lic_result.warnings:
+                        for warning in lic_result.warnings:
+                            render_caution(warning)
+                except ImportError:
+                    st.caption("License checker not available")
+                except Exception as err:
+                    st.caption(f"License check unavailable: {str(err)}")
+
+            # ==================== TAB 5: TRENDS ====================
+            with tab_trends:
+                st.markdown("<h3 class=\"section-header\">📈 Trend Analysis</h3>", unsafe_allow_html=True)
+                
+                try:
+                    from trends_analyzer import analyze_repository, get_trend_summary
+                    
+                    trend_analysis = analyze_repository(repo_input, features, headers)
+                    
+                    trend_col1, trend_col2, trend_col3, trend_col4 = st.columns(4)
+                    trend_col1.metric("Star Growth (30d)", f"{trend_analysis.star_growth_rate_30d:+.1f}%")
+                    trend_col2.metric("Star Growth (90d)", f"{trend_analysis.star_growth_rate_90d:+.1f}%")
+                    trend_col3.metric("Commits (90d)", trend_analysis.commit_activity_90d)
+                    trend_col4.metric("Health Score", trend_analysis.health_score,
+                                     delta=trend_analysis.health_status.title())
+                    
+                    st.markdown(f"**Trend Direction:** {trend_analysis.trend_direction.title()}")
+                    st.markdown(f"**Activity Trend:** {trend_analysis.activity_trend.title()}")
+                    st.markdown(f"**Commit Frequency:** {trend_analysis.commit_frequency.replace('_', ' ').title()}")
+                    st.markdown(f"**Fork Ratio:** {trend_analysis.fork_ratio:.3f} ({trend_analysis.fork_ratio_interpretation.replace('_', ' ').title()})")
+                    
+                    if trend_analysis.stars_30d_ago:
+                        st.markdown(f"**Stars 30 days ago:** {trend_analysis.stars_30d_ago:,}")
+                    if trend_analysis.stars_90d_ago:
+                        st.markdown(f"**Stars 90 days ago:** {trend_analysis.stars_90d_ago:,}")
+                    
+                    st.markdown(f"**Summary:** {get_trend_summary(trend_analysis)}")
+                    
+                except ImportError:
+                    st.caption("Trend analyzer not available")
+                except Exception as err:
+                    st.error(f"Trend analysis failed: {str(err)}")
+
+            # ==================== TAB 6: REPORT ====================
+            with tab_report:
+                st.markdown("<h3 class=\"section-header\">📄 Quality Report</h3>", unsafe_allow_html=True)
+                
+                report_format = st.selectbox("Report Format", ["html", "json"], label_visibility="collapsed")
+                
+                if st.button("Generate Report", type="primary"):
+                    with st.spinner("Generating report..."):
+                        try:
+                            from report_generator import generate_report
+                            
+                            report_content = generate_report(
+                                full_name=features["full_name"],
+                                html_url=features.get("html_url", ""),
+                                features=features,
+                                ml_probability=probability,
+                                heuristic_score=heuristic_result,
+                                combined_score=combined_score if combined_score else (probability * 100 + heuristic_result.get("total_score", 0)) / 2,
+                                format=report_format
+                            )
+                            
+                            if report_format == "json":
+                                st.json(json.loads(report_content))
+                            else:
+                                st.markdown("### Report Preview")
+                                st.components.v1.html(report_content, height=600, scrolling=True)
+                                
+                                report_bytes = report_content.encode()
+                                st.download_button(
+                                    label="Download Report",
+                                    data=report_bytes,
+                                    file_name=f"reposcore_report_{features['full_name'].replace('/', '_')}.html",
+                                    mime="text/html"
+                                )
+                                
+                        except ImportError:
+                            st.caption("Report generator not available")
+                        except Exception as err:
+                            st.error(f"Report generation failed: {str(err)}")

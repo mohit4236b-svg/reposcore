@@ -338,3 +338,217 @@ class RepoScorer:
             explanations.append("Repository shows healthy activity and community engagement")
         
         return explanations
+    
+    def calculate_risk_score(self, features: Dict[str, Any], 
+                            security_data: Optional[Dict[str, Any]] = None,
+                            license_data: Optional[Dict[str, Any]] = None,
+                            trend_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Calculate composite repository risk score.
+        
+        Args:
+            features: Repository features from fetch_repo_features()
+            security_data: Optional security scan data from security_scanner
+            license_data: Optional license check data from license_checker
+            trend_data: Optional trend analysis data from trends_analyzer
+            
+        Returns:
+            Risk score breakdown with risk level and warnings
+        """
+        risk_score = 100.0
+        risk_factors = []
+        risk_level = "LOW"
+        
+        if security_data:
+            vuln_count = security_data.get("total_vulnerabilities", 0)
+            risk_level_sec = security_data.get("risk_level", "NONE")
+            
+            if risk_level_sec == "CRITICAL":
+                risk_score -= 50
+                risk_factors.append(f"CRITICAL: {vuln_count} security vulnerabilities detected")
+            elif risk_level_sec == "HIGH":
+                risk_score -= 30
+                risk_factors.append(f"HIGH: {vuln_count} security vulnerabilities detected")
+            elif risk_level_sec == "MEDIUM":
+                risk_score -= 15
+                risk_factors.append(f"MEDIUM: {vuln_count} vulnerabilities detected")
+            elif risk_level_sec == "LOW":
+                risk_score -= 5
+                risk_factors.append(f"LOW: {vuln_count} minor vulnerabilities detected")
+        else:
+            risk_factors.append("Security scan not performed")
+        
+        if license_data:
+            lic_category = license_data.get("license_info", {}).get("category", "UNKNOWN")
+            lic_risk = license_data.get("risk_level", "NONE")
+            
+            if lic_risk == "HIGH":
+                risk_score -= 20
+                risk_factors.append("License: Unknown or restrictive license")
+            elif lic_risk == "MEDIUM":
+                risk_score -= 10
+                risk_factors.append("License: Copyleft restrictions apply")
+            elif lic_risk == "NONE" and not license_data.get("has_license"):
+                risk_score -= 15
+                risk_factors.append("No license detected - legal uncertainty")
+        else:
+            risk_factors.append("License check not performed")
+        
+        if trend_data:
+            activity_trend = trend_data.get("activity_trend", "unknown")
+            health_status = trend_data.get("health_status", "unknown")
+            
+            if activity_trend == "declining":
+                risk_score -= 15
+                risk_factors.append("Declining commit activity")
+            elif activity_trend == "improving":
+                risk_score += 5
+            
+            if health_status in ["critical", "concerning"]:
+                risk_score -= 10
+                risk_factors.append(f"Repository health: {health_status}")
+        
+        last_commit_days = features.get("last_commit_days", 0)
+        if last_commit_days > 365:
+            risk_score -= 20
+            risk_factors.append(f"No commits in {last_commit_days} days")
+        elif last_commit_days > 180:
+            risk_score -= 10
+            risk_factors.append(f"No commits in {last_commit_days} days")
+        
+        if features.get("is_archived", False):
+            risk_score -= 15
+            risk_factors.append("Repository is archived")
+        
+        stars = features.get("stars", 0)
+        forks = features.get("forks", 0)
+        if stars > 1000 and forks < 5:
+            risk_score -= 10
+            risk_factors.append("High stars but minimal forks - potential vanity metric")
+        
+        risk_score = max(0, min(100, risk_score))
+        
+        if risk_score >= 80:
+            risk_level = "CRITICAL"
+        elif risk_score >= 60:
+            risk_level = "HIGH"
+        elif risk_score >= 40:
+            risk_level = "MEDIUM"
+        elif risk_score >= 20:
+            risk_level = "LOW"
+        else:
+            risk_level = "MINIMAL"
+        
+        return {
+            "risk_score": round(risk_score, 2),
+            "risk_level": risk_level,
+            "risk_factors": risk_factors,
+            "risk_factors_count": len(risk_factors),
+            "calculated_at": datetime.utcnow().isoformat()
+        }
+    
+    def calculate_docs_quality_score(self, features: Dict[str, Any],
+                                    doc_metrics: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Calculate documentation quality score.
+        
+        Args:
+            features: Repository features from fetch_repo_features()
+            doc_metrics: Optional documentation metrics from detect_documentation_quality
+            
+        Returns:
+            Documentation quality score with breakdown
+        """
+        score = 100.0
+        factors = []
+        
+        readme_size = features.get("readme_size", 0)
+        if readme_size == 0:
+            score -= 40
+            factors.append("No README file")
+        elif readme_size < 500:
+            score -= 20
+            factors.append("README too small (<500 chars)")
+        elif readme_size < 1000:
+            score -= 10
+            factors.append("README could be more detailed")
+        elif readme_size > 5000:
+            score += 10
+            factors.append("Comprehensive README")
+        
+        topics = features.get("topics", [])
+        if len(topics) == 0:
+            score -= 10
+            factors.append("No topics specified")
+        elif len(topics) >= 3:
+            score += 5
+            factors.append("Good topic coverage")
+        
+        has_contributing = features.get("has_contributing", False)
+        if has_contributing:
+            score += 15
+            factors.append("Has CONTRIBUTING guide")
+        else:
+            score -= 10
+            factors.append("Missing CONTRIBUTING guide")
+        
+        has_code_of_conduct = features.get("has_code_of_conduct", False)
+        if has_code_of_conduct:
+            score += 10
+            factors.append("Has CODE_OF_CONDUCT")
+        else:
+            score -= 5
+            factors.append("Missing CODE_OF_CONDUCT")
+        
+        if doc_metrics:
+            doc_score = doc_metrics.get("doc_score", 0)
+            if doc_score >= 80:
+                score += 15
+                factors.append("Excellent documentation structure")
+            elif doc_score >= 60:
+                score += 10
+                factors.append("Good documentation structure")
+            elif doc_score >= 40:
+                score -= 5
+                factors.append("Documentation could be improved")
+            elif doc_score < 40:
+                score -= 15
+                factors.append("Poor documentation structure")
+            
+            docstring_ratio = doc_metrics.get("docstring_ratio", 0)
+            if docstring_ratio >= 70:
+                score += 10
+                factors.append(f"High docstring coverage ({docstring_ratio:.0f}%)")
+            elif docstring_ratio >= 50:
+                score += 5
+                factors.append(f"Good docstring coverage ({docstring_ratio:.0f}%)")
+            elif docstring_ratio < 30:
+                score -= 10
+                factors.append(f"Low docstring coverage ({docstring_ratio:.0f}%)")
+            
+            detected_docs = doc_metrics.get("detected_docs", {})
+            
+            if detected_docs.get("changelog", {}).get("found"):
+                score += 5
+                factors.append("Has CHANGELOG")
+            else:
+                score -= 5
+                factors.append("Missing CHANGELOG")
+            
+            if detected_docs.get("license", {}).get("found"):
+                score += 5
+            else:
+                score -= 5
+                factors.append("Missing LICENSE file")
+        
+        score = max(0, min(100, score))
+        
+        quality_level = "excellent" if score >= 85 else "good" if score >= 70 else "moderate" if score >= 50 else "poor"
+        
+        return {
+            "docs_quality_score": round(score, 2),
+            "quality_level": quality_level,
+            "factors": factors,
+            "factors_count": len(factors),
+            "calculated_at": datetime.utcnow().isoformat()
+        }
