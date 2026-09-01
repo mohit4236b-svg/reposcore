@@ -328,7 +328,7 @@ def check_license_from_repo(repo_path: str, github_license: Optional[dict] = Non
         modifications=False,
         liability=False,
         patent_use=False,
-        warnings=COPYRIGHT_WARNINGS if False else [],
+        warnings=list(COPYRIGHT_WARNINGS),
         source="none"
     )
     

@@ -6,6 +6,7 @@ import joblib
 import numpy as np
 import pandas as pd
 import requests
+import json
 import streamlit as st
 import textwrap
 from dotenv import load_dotenv
@@ -103,7 +104,6 @@ st.markdown("""
         color: #cbd5e0;
         margin-bottom: 2px;
     }
-    /* AI Review card - smaller font size for markdown content */
     /* AI Review card - smaller font size for markdown content */
     .stContainer[data-testid="stVerticalBlockBorderWrapper"] .stMarkdown {
         font-size: 0.9rem;
@@ -358,22 +358,6 @@ if st.button("Predict Quality", type="primary") and repo_input:
             n_low_confidence_reasons = 1 if low_confidence else 0
             total_issues = n_exceptions + n_low_confidence_reasons
 
-            # Calculate heuristic and combined scores early for top-level display
-            try:
-                from scoring_engine import RepoScorer
-                scorer = RepoScorer()
-                heuristic_result = scorer.calculate_score(features)
-                ml_score_pct = probability * 100
-                heuristic_score = heuristic_result['total_score']
-                combined_score = (ml_score_pct + heuristic_score) / 2
-                divergence = abs(ml_score_pct - heuristic_score)
-            except Exception:
-                heuristic_result = None
-                ml_score_pct = probability * 100
-                heuristic_score = None
-                combined_score = None
-                divergence = None
-
             # Display Results UI
             st.subheader(f"Results for [{features['full_name']}]({features['html_url']})")
 
@@ -476,7 +460,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
                     topics_html = f'<div style="margin-top: 0.5rem; color: #cbd5e0;"><strong>Topics:</strong> {", ".join([f"`{t}`" for t in topics])}</div>'
 
                 # Component scores as HTML using render_component_bar style
-                components = heuristic_result['components']
+                components = heuristic_result.get('components', {}) if heuristic_result else {}
                 component_bars_html = ""
                 for label, value in [("Maintenance", components['maintenance']), ("Community", components['community']), 
                     ("Documentation", components['documentation']), ("Contributors", components['contributors'])]:
@@ -523,7 +507,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
 </div>
 {topics_html}
 <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #2d3548;">
-    <div style="font-size: 0.95em; color: #cbd5e0; margin-bottom: 0.5rem;"><strong>Threshold used:</strong> 0.5</div>
+    <div style="font-size: 0.95em; color: #cbd5e0; margin-bottom: 0.5rem;"><strong>Threshold used:</strong> {threshold}</div>
     <div style="font-size: 0.95em; color: #cbd5e0; margin-bottom: 0.5rem;"><strong>Model probability:</strong> {probability:.1%}</div>
     <div style="font-size: 0.95em; color: #cbd5e0; margin-bottom: 1rem;"><strong>Prediction:</strong> {"High Quality" if prediction == 1 else "Low Quality / Unmaintained"}</div>
 </div>
@@ -787,7 +771,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
                                     st.json(json.loads(report_content))
                                 else:
                                     st.markdown("### Report Preview")
-                                    st.html(report_content, height=600, scrolling=True)
+                                    st.markdown(report_content, unsafe_allow_html=True)
                                     
                                     report_bytes = report_content.encode()
                                     st.download_button(
