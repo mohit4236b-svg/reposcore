@@ -343,15 +343,15 @@ if st.button("Predict Quality", type="primary") and repo_input:
             probability = rf_model.predict_proba(X_dense)[0][1]
             prediction = 1 if probability >= threshold else 0
 
-
-            # Log to audit trail
-            log_audit_trail(features, probability, prediction, threshold, caveats=warning_messages)
             # Check for exceptions and low confidence
             exceptions = check_exceptions(features)
             low_confidence = 0.4 <= probability <= 0.6  # Model uncertainty band
             warning_messages = exceptions.copy()
             if low_confidence:
                 warning_messages.append("Low confidence prediction (probability near 0.5).")
+
+            # Log to audit trail
+            log_audit_trail(features, probability, prediction, threshold, caveats=warning_messages)
 
             # Confidence report - explicit match rate and exceptions count
             n_exceptions = len(exceptions)
