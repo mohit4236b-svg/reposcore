@@ -59,31 +59,7 @@ async def submit_analysis(owner: str = Query(...), repo: str = Query(...),
     Submit a repository for quality analysis.
     Returns a job ID for tracking progress.
     """
-    job_id = str(uuid.uuid4())
-    
-    # Store job in Redis
-    get_redis_client().hset(f"job:{job_id}", mapping={
-        "owner": owner,
-        "repo": repo,
-        "threshold": threshold,
-        "status": "queued",
-        "created_at": datetime.utcnow().isoformat()
-    })
-    
-    # Trigger background processing
-    # In production: push to Celery queue
-    # For now: process synchronously with job tracking
-    result = await analyze_repo(owner, repo, threshold)
-    
-    # Store result
-    get_redis_client().setex(f"repo:{owner}:{repo}", 86400, json.dumps(result))
-    get_redis_client().hset(f"job:{job_id}", "status", "completed")
-    get_redis_client().hset(f"job:{job_id}", "result_key", f"repo:{owner}:{repo}")
-    
-    return {"job_id": job_id, "status": "completed", "result_key": f"repo:{owner}:{repo}"}
-
-
-async def analyze_repo(owner: str, repo: str, threshold: float = 0.3) -> Dict[str, Any]:
+        job_id = str(uuid.uuid4())\n        \n        # Store job in Redis\n        try:\n            get_redis_client().hset(f"job:{job_id}", mapping={}\n                "owner": owner,\n                "repo": repo,\n                "threshold": threshold,\n                "status": "queued",\n                "created_at": datetime.utcnow().isoformat()\n            })\n        except redis.exceptions.ConnectionError as e:\n            raise HTTPException(status_code=503, detail="Redis service unavailable")\n        \n        # Trigger background processing\n        # In production: push to Celery queue\n        # For now: process synchronously with job tracking\n        result = await analyze_repo(owner, repo, threshold)\n        \n        # Store result\n        try:\n            get_redis_client().setex(f"repo:{owner}:{repo}", 86400, json.dumps(result))\n            get_redis_client().hset(f"job:{job_id}", "status", "completed")\n            get_redis_client().hset(f"job:{job_id}", "result_key", f"repo:{owner}:{repo}")\n        except redis.exceptions.ConnectionError as e:\n            raise HTTPException(status_code=503, detail="Redis service unavailable")\n        \n        return {"job_id": job_id, "status": "completed", "result_key": f"repo:{owner}:{repo}"}\nasync def analyze_repo(owner: str, repo: str, threshold: float = 0.3) -> Dict[str, Any]:
     """Perform repository analysis with scoring."""
     scorer = RepoScorer()
     
@@ -118,21 +94,7 @@ async def analyze_repo(owner: str, repo: str, threshold: float = 0.3) -> Dict[st
 @app.get("/api/jobs/{job_id}")
 async def get_job_status(job_id: str):
     """Get the status of a submitted job."""
-    job_data = get_redis_client().hgetall(f"job:{job_id}")
-    
-    if not job_data:
-        raise HTTPException(status_code=404, detail="Job not found")
-    
-    result_key = job_data.get("result_key")
-    if result_key:
-        result_data = get_redis_client().get(result_key)
-        if result_data:
-            job_data["result"] = json.loads(result_data)
-    
-    return job_data
-
-
-@app.get("/api/score/{owner}/{repo}")
+        try:\n            job_data = get_redis_client().hgetall(f"job:{job_id}")\n        except redis.exceptions.ConnectionError as e:\n            raise HTTPException(status_code=503, detail="Redis service unavailable")\n        \n        if not job_data:\n            raise HTTPException(status_code=404, detail="Job not found")\n        \n        result_key = job_data.get("result_key")\n        if result_key:\n            try:\n                result_data = get_redis_client().get(result_key)\n            except redis.exceptions.ConnectionError as e:\n                raise HTTPException(status_code=503, detail="Redis service unavailable")\n            if result_data:\n                job_data["result"] = json.loads(result_data)\n        \n        return job_data\n@app.get("/api/score/{owner}/{repo}")
 async def get_repo_score(owner: str, repo: str):
     """Get repository quality score from cache or trigger analysis."""
     cache_key = f"repo:{owner}:{repo}"
@@ -196,11 +158,7 @@ async def list_recent_jobs(limit: int = 10):
 @app.on_event("startup")
 async def startup_event():
     """Initialize services on startup."""
-    print("RepoScore API v2.0 starting up...")
-    print(f"Cache: {get_cache().redis.connection_pool.connection_kwargs}")
-
-
-@app.on_event("shutdown")
+    print("RepoScore API v2.0 starting up...")\n    try:\n        print(f"Cache: {get_cache().redis.connection_pool.connection_kwargs}")\n    except Exception as e:\n        print(f"Cache: Redis unavailable ({e})")\n@app.on_event("shutdown")
 async def shutdown_event():
     """Cleanup on shutdown."""
     print("RepoScore API shutting down...")

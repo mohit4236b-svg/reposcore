@@ -8,6 +8,11 @@ Import strip_badges from here in both places instead of copy-pasting it.
 """
 
 import re
+import subprocess
+import tempfile
+import shutil
+import os
+import time
 
 # Strips markdown image/badge syntax, shields.io/badge-service URLs, and
 # common CI/build/status badge hosts. This exists because has_ci/has_tests
@@ -89,7 +94,7 @@ def fetch_repo_features(full_name, headers=None):
         except Exception:
             readme_text = ""
 
-    # Fetch contributor count (handle pagination)
+# Fetch contributor count (handle pagination)
     total_contributors = 1  # Default to at least the user
     try:
         contribs_resp = requests.get(
@@ -101,11 +106,12 @@ def fetch_repo_features(full_name, headers=None):
             # Use Link header to get total count if available
             link = contribs_resp.headers.get("Link", "")
             if 'rel="last"' in link:
-                import re
                 # Match the page number specifically from the "last" relation
                 match = re.search(r'page=(\d+)>; rel="last"', link)
                 if match:
                     total_contributors = int(match.group(1))
+                else:
+                    total_contributors = len(contribs_resp.json())
             else:
                 total_contributors = len(contribs_resp.json())
     except Exception:
@@ -230,3 +236,155 @@ def predict_quality(features, rf_model, tfidf_readme, tfidf_topics, scaler):
     prediction = int(rf_model.predict(X_dense)[0])
     probability = float(rf_model.predict_proba(X_dense)[0][1])
     return prediction, probability
+
+
+def clone_repo_bounded(repo_full_name: str, size_kb: int) -> str | None:
+    """
+    Clone a Python repository with bounds and cleanup.
+    
+    Args:
+        repo_full_name: Repository full name (owner/repo)
+        size_kb: Repository size in kilobytes from GitHub API
+        
+    Returns:
+        Path to cloned repository on success, None on failure
+    """
+    # Size cap: 50MB = 50 * 1024 KB
+    MAX_SIZE_KB = 50 * 1024
+    
+    # Check size limit first
+    if size_kb > MAX_SIZE_KB:
+        return None
+    
+    # Create temporary directory
+    temp_dir = tempfile.mkdtemp(prefix="reposcore_")
+    try:
+        # Attempt shallow clone with timeout
+        clone_url = f"https://github.com/{repo_full_name}.git"
+        
+        # Use subprocess with timeout
+        result = subprocess.run(
+            ["git", "clone", "--depth", "1", clone_url, temp_dir],
+            capture_output=True,
+            text=True,
+            timeout=30  # 30 second hard timeout
+        )
+        
+        # Check if clone succeeded
+        if result.returncode == 0:
+            return temp_dir
+        else:
+            # Clone failed
+            return None
+            
+    except subprocess.TimeoutExpired:
+        # Timeout occurred
+        return None
+    except Exception:
+        # Any other error (git not found, network issues, etc.)
+        return None
+    finally:
+        # Cleanup on failure - if we're returning None, cleanup the temp dir
+        # If we succeeded, the caller is responsible for cleanup
+        if 'result' in locals() and result.returncode != 0:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+        elif 'result' not in locals():
+            # Exception occurred before result was set
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+def extract_code_metrics(repo_path: str) -> dict | None:
+    """
+    Extract code complexity metrics using radon.
+    
+    Args:
+        repo_path: Path to cloned repository
+        
+    Returns:
+        Dictionary with metrics or None on failure
+    """
+    try:
+        import radon
+        from radon.raw import analyze as raw_analyze
+        from radon.complexity import cc_visit
+        from radon.metrics import mi_visit
+        import ast
+    except ImportError:
+        # Radon not installed
+        return None
+    
+    # Set timeout for radon analysis (15 seconds)
+    start_time = time.time()
+    
+    try:
+        # Find all Python files
+        py_files = []
+        for root, dirs, files in os.walk(repo_path):
+            # Skip common non-source directories
+            dirs[:] = [d for d in dirs if not d.startswith('.') and d not in ['__pycache__', 'node_modules', 'venv', 'env', 'build', 'dist']]
+            for file in files:
+                if file.endswith('.py'):
+                    py_files.append(os.path.join(root, file))
+        
+        if not py_files:
+            return {"file_count": 0, "avg_complexity": 0, "total_loc": 0}
+        
+        # Initialize metrics
+        total_loc = 0
+        total_complexity = 0
+        complexity_count = 0
+        
+        # Analyze each Python file
+        for py_file in py_files:
+            try:
+                # Check timeout
+                if time.time() - start_time > 15:
+                    break
+                    
+                with open(py_file, 'r', encoding='utf-8', errors='ignore') as f:
+                    content = f.read()
+                
+                # Skip empty files
+                if not content.strip():
+                    continue
+                
+                # Raw metrics (lines of code, etc.)
+                raw_metrics = raw_analyze(content)
+                total_loc += raw_metrics.loc  # Lines of code
+                
+                # Cyclomatic complexity
+                try:
+                    # Parse the file to check for syntax errors first
+                    tree = ast.parse(content)
+                    complexity_blocks = cc_visit(tree)
+                    
+                    for block in complexity_blocks:
+                        total_complexity += block.complexity
+                        complexity_count += 1
+                except SyntaxError:
+                    # Skip files with syntax errors
+                    continue
+                    
+            except Exception:
+                # Skip individual file errors
+                continue
+            
+            # Check timeout again
+            if time.time() - start_time > 15:
+                break
+        
+        # Calculate average complexity
+        avg_complexity = total_complexity / max(complexity_count, 1)
+        
+        return {
+            "file_count": len(py_files),
+            "avg_complexity": round(avg_complexity, 2),
+            "total_loc": total_loc
+        }
+        
+    except Exception:
+        # Radon analysis failed
+        return None
+    finally:
+        # Ensure cleanup happens even on unexpected errors
+        pass

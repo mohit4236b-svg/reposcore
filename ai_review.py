@@ -1,7 +1,15 @@
 import os
 import time
 import logging
+import shutil
 from typing import Dict, Any
+
+# Import our new code analysis functions
+try:
+    from reposcore_utils import clone_repo_bounded, extract_code_metrics
+    CODE_ANALYSIS_AVAILABLE = True
+except ImportError:
+    CODE_ANALYSIS_AVAILABLE = False
 
 # Setup basic logging
 logging.basicConfig(level=logging.INFO)
@@ -27,6 +35,8 @@ P = """You are a critical GitHub repository reviewer. Provide a comprehensive, s
 **README content:**
 {readme_for_prompt}
 
+{code_metrics_section}
+
 ---
 
 Output the review in this exact format with these four sections:
@@ -46,7 +56,7 @@ Example: `- **No CI/CD pipeline**: despite CI presence being a core feature in t
 
 ## Production Readiness Assessment
 Provide a 2-3 sentence assessment of whether this project appears production-ready based on the available signals.
-
+{code_metrics_instruction}
 Do NOT mention models, predictions, confidence scores, or use placeholder text. Output ONLY the structured review.
 """
 
@@ -107,6 +117,18 @@ def N(readme_content: str, features: dict, prediction: int, probability: float) 
     if len(readme_content) > m:
         rp += f"\n\n[README truncated from {len(readme_content)} to {m} chars]"
     
+    # Generate code metrics section if available
+    code_metrics_section = ""
+    code_metrics_instruction = ""
+    if 'code_file_count' in features and features['code_file_count'] is not None:
+        code_metrics_section = f"""**Code Analysis Metrics:**
+- Language: Python
+- Files analyzed: {features.get('code_file_count', 0)}
+- Average cyclomatic complexity: {features.get('code_avg_complexity', 0)}
+- Total lines of code: {features.get('code_total_loc', 0)}"""
+        
+        code_metrics_instruction = "When making your Production Readiness Assessment, consider the actual code-derived metrics provided above, which give insight into the codebase size and complexity."
+    
     pt = P.format(
         full_name=features.get("full_name", "Unknown"),
         stars=features.get("stars", 0),
@@ -123,7 +145,9 @@ def N(readme_content: str, features: dict, prediction: int, probability: float) 
         has_contributing="Yes" if features.get("has_contributing") else "No",
         has_code_of_conduct="Yes" if features.get("has_code_of_conduct") else "No",
         readme_size=features.get("readme_size", 0),
-        readme_for_prompt=rp
+        readme_for_prompt=rp,
+        code_metrics_section=code_metrics_section,
+        code_metrics_instruction=code_metrics_instruction
     )
     
     # Retry logic for transient errors
@@ -181,12 +205,43 @@ def N(readme_content: str, features: dict, prediction: int, probability: float) 
     return {"review": "AI review unavailable: Max retries exceeded for NVIDIA API.", "status": "error", "provider": "nvidia"}
 
 def generate_ai_review(readme_content: str, features: dict, prediction: int, probability: float) -> Dict[str, Any]:
-    """Generate AI review using NVIDIA API exclusively."""
+    """Generate AI review using NVIDIA API with optional code analysis enhancement."""
     if not readme_content or not readme_content.strip():
         return {"review": "AI review unavailable: README empty.", "status": "error", "provider": "none"}
     
-    # Use only NVIDIA API
-    nres = N(readme_content, features, prediction, probability)
+    # Create a copy of features to avoid modifying the original
+    enhanced_features = features.copy()
+    
+    # Only analyze Python repositories for code metrics
+    if CODE_ANALYSIS_AVAILABLE and features.get("primary_language") == "Python":
+        try:
+            # Get repo size from features (already fetched by fetch_repo_features)
+            size_kb = features.get("size", 0)  # GitHub API returns size in KB
+            
+            # Clone the repository with bounds
+            repo_path = clone_repo_bounded(features["full_name"], size_kb)
+            
+            if repo_path:
+                # Extract code metrics
+                metrics = extract_code_metrics(repo_path)
+                
+                # Clean up the cloned repository
+                shutil.rmtree(repo_path, ignore_errors=True)
+                
+                if metrics:
+                    # Add code metrics to features for the prompt
+                    enhanced_features['code_file_count'] = metrics.get('file_count', 0)
+                    enhanced_features['code_avg_complexity'] = metrics.get('avg_complexity', 0)
+                    enhanced_features['code_total_loc'] = metrics.get('total_loc', 0)
+        except Exception:
+            # If anything goes wrong with code analysis, continue with just the original features
+            # Clean up any potential temp directory
+            if 'repo_path' in locals() and repo_path:
+                shutil.rmtree(repo_path, ignore_errors=True)
+            pass
+    
+    # Use only NVIDIA API with potentially enhanced features
+    nres = N(readme_content, enhanced_features, prediction, probability)
     return nres
 
 def format_ai_review_for_display(ai_review_result: dict) -> str:

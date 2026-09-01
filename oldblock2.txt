@@ -1,0 +1,25 @@
+    with st.spinner("Fetching repo data from GitHub API..."):
+        try:
+            features = fetch_repo_features(repo_input, headers=headers)
+        except RepoFetchError as e:
+            st.error(str(e))
+        else:
+            topics = features["topics"]
+            repo_age_days = features["repo_age_days"]
+
+            X_dense = featurize(features, tfidf_readme, tfidf_topics, scaler)
+
+            # Generate Predictions -- use the user-chosen threshold, not the
+            # model's built-in 0.5 cutoff (see slider help text / README for why)
+            probability = rf_model.predict_proba(X_dense)[0][1]
+            prediction = 1 if probability >= threshold else 0
+
+
+            # Log to audit trail
+            log_audit_trail(features, probability, prediction, threshold, caveats=warning_messages)
+            # Check for exceptions and low confidence
+            exceptions = check_exceptions(features)
+            low_confidence = 0.4 <= probability <= 0.6  # Model uncertainty band
+            warning_messages = exceptions.copy()
+            if low_confidence:
+                warning_messages.append("Low confidence prediction (probability near 0.5).")
