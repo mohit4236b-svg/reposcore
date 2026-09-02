@@ -1,51 +1,101 @@
-version: "3.8"
+# =============================================================================
+# RepoScore - Full Stack Deployment
+# =============================================================================
+# Orchestrates Streamlit app, FastAPI backend, and Redis cache
+#
+# Usage:
+#   Development: docker-compose up
+#   Production:  docker-compose -f docker-compose.yml up -d
+# =============================================================================
+
+version: '3.8'
 
 services:
-  api:
-    build: .
-    ports:
-      - "8000:8000"
-    depends_on:
-      - redis
-    environment:
-      - REDIS_URL=redis://redis:6379/0
-      - GITHUB_TOKEN=${GITHUB_TOKEN}
-    volumes:
-      - ./models:/app/models
-      - ./reposcore_utils.py:/app/reposcore_utils.py
-      - ./scoring_engine.py:/app/scoring_engine.py
-    restart: unless-stopped
-
-  worker:
-    build: .
-    command: celery -A api_server.celery_app worker --loglevel=info
-    depends_on:
-      - redis
-    environment:
-      - REDIS_URL=redis://redis:6379/0
-      - GITHUB_TOKEN=${GITHUB_TOKEN}
-    volumes:
-      - ./models:/app/models
-    restart: unless-stopped
-
-  redis:
+  # ---------------------------------------------------------------------------
+  # Redis Cache - Shared between app and API
+  # ---------------------------------------------------------------------------
+  cache:
     image: redis:7-alpine
+    container_name: reposcore_cache
+    restart: unless-stopped
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
-    restart: unless-stopped
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - reposcore_network
 
-  flower:
-    image: mher/flower
+  # ---------------------------------------------------------------------------
+  # Streamlit App - Frontend
+  # ---------------------------------------------------------------------------
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: reposcore_app
+    restart: unless-stopped
     ports:
-      - "5555:5555"
-    depends_on:
-      - redis
+      - "8501:8501"
     environment:
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/1
-    restart: unless-stopped
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - REDIS_URL=redis://cache:6379/0
+    depends_on:
+      cache:
+        condition: service_healthy
+      api:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - reposcore_network
 
+  # ---------------------------------------------------------------------------
+  # FastAPI Backend - REST API
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: reposcore_api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - REDIS_URL=redis://cache:6379/0
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      cache:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - reposcore_network
+
+# -----------------------------------------------------------------------------
+# Volumes - Persistent data
+# -----------------------------------------------------------------------------
 volumes:
   redis_data:
+    driver: local
+
+# -----------------------------------------------------------------------------
+# Networks - Internal communication
+# -----------------------------------------------------------------------------
+networks:
+  reposcore_network:
+    driver: bridge

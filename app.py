@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 import base64
 import os
 import pickle
@@ -31,7 +31,7 @@ if "NVIDIA_API_KEY" in st.secrets:
 # Page configuration
 st.set_page_config(
     page_title="RepoScore",
-    page_icon="⭐",
+    page_icon="?",
     layout="wide"
 )
 
@@ -143,7 +143,7 @@ def render_component_bar(label, value, max_value=100):
 def render_verdict_banner(prediction, probability):
     """Renders the main prediction verdict with distinct color, not the generic warning style."""
     css_class = "rs-verdict-high" if prediction == 1 else "rs-verdict-low"
-    icon = "✅" if prediction == 1 else "⚠️"
+    icon = "?" if prediction == 1 else "??"
     label = "High Quality Repository" if prediction == 1 else "Low Quality / Unmaintained Repository"
     st.markdown(textwrap.dedent(f"""
     <div class="{css_class}">
@@ -154,11 +154,11 @@ def render_verdict_banner(prediction, probability):
 
 def render_note(text):
     """Muted neutral style for informational asides like 'No topics specified.'"""
-    st.markdown(f'<div class="rs-note">ℹ️ {text}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="rs-note">?? {text}</div>', unsafe_allow_html=True)
 
 def render_caution(text):
     """Distinct yellow style reserved ONLY for the genuinely important divergence caution."""
-    st.markdown(f'<div class="rs-caution">⚠️ {text}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="rs-caution">?? {text}</div>', unsafe_allow_html=True)
 
 
 def render_card(content_html):
@@ -196,13 +196,13 @@ def load_ml_assets():
         file_path = os.path.join(model_dir, filename)
 
         if not os.path.exists(file_path):
-            st.error(f"❌ Missing file: `{filename}` was not found in the `models/` directory.")
+            st.error(f"? Missing file: `{filename}` was not found in the `models/` directory.")
             st.stop()
 
         try:
             loaded[key] = safe_load(file_path)
         except Exception as err:
-            st.error(f"❌ Failed loading `{filename}`:")
+            st.error(f"? Failed loading `{filename}`:")
             st.exception(err)
             st.stop()
 
@@ -314,7 +314,7 @@ def log_audit_trail(features, probability, prediction, threshold, caveats=None):
 rf_model, tfidf_readme, tfidf_topics, scaler = load_ml_assets()
 
 # Application Interface
-st.title("⭐ RepoScore: GitHub Repository Quality Predictor")
+st.title("? RepoScore: GitHub Repository Quality Predictor")
 st.caption("Analyze a public GitHub repository to predict its overall quality score.")
 
 repo_input = st.text_input("Enter Repository (owner/name):", placeholder="scikit-learn/scikit-learn")
@@ -363,10 +363,10 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
             # --- Repo Stats (always visible above tabs) ---
             col1, col2, col3, col4 = st.columns(4)
-            col1.metric("⭐ Stars", features["stars"])
-            col2.metric("🍴 Forks", features["forks"])
-            col3.metric("🐛 Open Issues", features["open_issues"])
-            col4.metric("📅 Age (Days)", repo_age_days)
+            col1.metric("? Stars", features["stars"])
+            col2.metric("?? Forks", features["forks"])
+            col3.metric("?? Open Issues", features["open_issues"])
+            col4.metric("?? Age (Days)", repo_age_days)
 
             if topics:
                 st.write("**Topics:** " + ", ".join([f"`{t}`" for t in topics]))
@@ -394,22 +394,22 @@ if st.button("Predict Quality", type="primary") and repo_input:
                 # Determine color based on score range
                 if combined_score >= 70:
                     score_color = "green"
-                    score_emoji = "🟢"
+                    score_emoji = "??"
                 elif combined_score >= 40:
                     score_color = "orange"
-                    score_emoji = "🟡"
+                    score_emoji = "??"
                 else:
                     score_color = "red"
-                    score_emoji = "🔴"
+                    score_emoji = "??"
 
                 # Main score display - wrapped in card
                 # Build HTML content for the card (Streamlit native elements render as siblings, not children)
-                score_card_html = f'''<h2 class="section-header">📊 Combined Score: {combined_score:.1f}/100 {score_emoji}</h2>
+                score_card_html = f'''<h2 class="section-header">?? Combined Score: {combined_score:.1f}/100 {score_emoji}</h2>
 <div style="margin-bottom: 1rem;">
     <div style="background-color: #2d3548; border-radius: 6px; height: 20px; overflow: hidden;">
         <div style="background-color: {score_color}; width: {combined_score}%; height: 100%; border-radius: 6px; transition: width 0.3s ease;"></div>
     </div>
-    <div style="font-size: 0.9em; color: #cbd5e0; margin-top: 0.5rem;">{combined_score:.1f}% — 50% ML Model + 50% Heuristic</div>
+    <div style="font-size: 0.9em; color: #cbd5e0; margin-top: 0.5rem;">{combined_score:.1f}% � 50% ML Model + 50% Heuristic</div>
 </div>
 <div style="display: flex; gap: 1rem; margin-top: 1rem;">
     <div style="flex: 1; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;">
@@ -432,7 +432,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
                 render_card(score_card_html)
                 # Divergence warning - use render_caution (outside the card)
                 if divergence > 15:
-                    render_caution(f"ML and Heuristic scores diverge by {divergence:.1f} points — treat this combined score with caution; review both scores individually in the **Why This Score?** tab.")
+                    render_caution(f"ML and Heuristic scores diverge by {divergence:.1f} points � treat this combined score with caution; review both scores individually in the **Why This Score?** tab.")
 
             # Confidence report & warnings - wrapped in card
             confidence_html = f'<div style="font-size: 0.95em; color: #cbd5e0;">Confidence report: <strong>{probability:.1%}</strong> match rate | {total_issues} exception{"s" if total_issues != 1 else ""} flagged</div>'
@@ -449,7 +449,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
             # --- TABS FOR DETAILED SECTIONS ---
             tab_overview, tab_why, tab_ai, tab_security, tab_trends, tab_report = st.tabs(
-                ["📊 Overview", "🔍 Why This Score?", "🤖 AI Review", "🔒 Security", "📈 Trends", "📄 Report"]
+                ["?? Overview", "?? Why This Score?", "?? AI Review", "?? Security", "?? Trends", "?? Report"]
             )
 
             # ==================== TAB 1: OVERVIEW ====================
@@ -481,27 +481,27 @@ if st.button("Predict Quality", type="primary") and repo_input:
                 if exceptions or low_confidence:
                     notes = []
                     for exc in exceptions:
-                        notes.append(f'<div class="rs-note">ℹ️ {exc}</div>')
+                        notes.append(f'<div class="rs-note">?? {exc}</div>')
                     if low_confidence:
-                        notes.append('<div class="rs-note">ℹ️ Low confidence prediction (probability near 0.5).</div>')
+                        notes.append('<div class="rs-note">?? Low confidence prediction (probability near 0.5).</div>')
                     data_quality_html = f'<div style="margin-top: 1rem;"><strong>Data Quality Notes</strong>{"".join(notes)}</div>'
 
-                overview_card_html = f'''<h3 class="section-header">📊 Overview</h3>
+                overview_card_html = f'''<h3 class="section-header">?? Overview</h3>
 <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
     <div style="flex: 1; min-width: 120px; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;">
-        <div style="font-size: 0.85em; color: #94a3b8;">⭐ Stars</div>
+        <div style="font-size: 0.85em; color: #94a3b8;">? Stars</div>
         <div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{features["stars"]}</div>
     </div>
     <div style="flex: 1; min-width: 120px; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;">
-        <div style="font-size: 0.85em; color: #94a3b8;">🍴 Forks</div>
+        <div style="font-size: 0.85em; color: #94a3b8;">?? Forks</div>
         <div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{features["forks"]}</div>
     </div>
     <div style="flex: 1; min-width: 120px; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;">
-        <div style="font-size: 0.85em; color: #94a3b8;">🐛 Open Issues</div>
+        <div style="font-size: 0.85em; color: #94a3b8;">?? Open Issues</div>
         <div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{features["open_issues"]}</div>
     </div>
     <div style="flex: 1; min-width: 120px; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;">
-        <div style="font-size: 0.85em; color: #94a3b8;">📅 Age (Days)</div>
+        <div style="font-size: 0.85em; color: #94a3b8;">?? Age (Days)</div>
         <div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{repo_age_days}</div>
     </div>
 </div>
@@ -561,11 +561,11 @@ if st.button("Predict Quality", type="primary") and repo_input:
                     with feat_col1:
                         st.markdown("**Pushed toward High Quality**")
                         for _, row in top_pos.iterrows():
-                            st.markdown(f":green[✅ {row['feature']} (+{row['shap_value']:.3f})]")
+                            st.markdown(f":green[? {row['feature']} (+{row['shap_value']:.3f})]")
                     with feat_col2:
                         st.markdown("**Pushed toward Low Quality**")
                         for _, row in top_neg.iterrows():
-                            st.markdown(f":red[❌ {row['feature']} ({row['shap_value']:.3f})]")
+                            st.markdown(f":red[? {row['feature']} ({row['shap_value']:.3f})]")
                 except Exception as err:
                     st.caption(f"Explanation unavailable: {err}")
 
@@ -598,13 +598,13 @@ if st.button("Predict Quality", type="primary") and repo_input:
                         delta = ml_score_pct - heuristic_score
                         st.write(f"**Delta vs ML Model:** {delta:+.1f} points")
                         if abs(delta) > 15:
-                            render_caution(f"ML and Heuristic scores diverge by {abs(delta):.1f} points — treat this combined score with caution; review both scores individually in the Why This Score? tab.")
+                            render_caution(f"ML and Heuristic scores diverge by {abs(delta):.1f} points � treat this combined score with caution; review both scores individually in the Why This Score? tab.")
                         else:
-                            st.caption("✅ Scores are well-aligned between ML model and heuristic scorer.")
+                            st.caption("? Scores are well-aligned between ML model and heuristic scorer.")
                         if heuristic_result.get('explanations'):
                             st.write("**Explanations:**")
                             for exp in heuristic_result['explanations'][:3]:  # Show top 3
-                                st.write(f"• {exp}")
+                                st.write(f"� {exp}")
                         st.markdown('</div>', unsafe_allow_html=True)
                     except Exception as err:
                         st.caption(f"Heuristic score unavailable: {err}")
@@ -640,9 +640,10 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
             # ==================== TAB 4: SECURITY ====================
             with tab_security:
-                st.markdown("<h3 class=\"section-header\">🔒 Security Analysis</h3>", unsafe_allow_html=True)
+                st.markdown("<h3 class=\"section-header\">?? Security Analysis</h3>", unsafe_allow_html=True)
                 
-                try:
+                with st.spinner("Scanning for vulnerabilities..."):
+                    try:
                     from security_scanner import scan_repository, get_vulnerability_summary
                     from reposcore_utils import clone_repo_bounded
                     import shutil
@@ -657,13 +658,13 @@ if st.button("Predict Quality", type="primary") and repo_input:
                             vuln_col1, vuln_col2, vuln_col3, vuln_col4 = st.columns(4)
                             vuln_col1.metric("Total", scan_result.total_vulnerabilities)
                             vuln_col2.metric("Critical", scan_result.critical_count, 
-                                           delta="🔴" if scan_result.critical_count > 0 else None)
+                                           delta="??" if scan_result.critical_count > 0 else None)
                             vuln_col3.metric("High", scan_result.high_count,
-                                           delta="🟠" if scan_result.high_count > 0 else None)
+                                           delta="??" if scan_result.high_count > 0 else None)
                             vuln_col4.metric("Medium", scan_result.medium_count)
                             
-                            risk_color = {"CRITICAL": "🔴", "HIGH": "🟠", "MEDIUM": "🟡", "LOW": "🟢", "NONE": "✅"}
-                            st.markdown(f"**Risk Level:** {risk_color.get(scan_result.risk_level, '⚪')} {scan_result.risk_level}")
+                            risk_color = {"CRITICAL": "??", "HIGH": "??", "MEDIUM": "??", "LOW": "??", "NONE": "?"}
+                            st.markdown(f"**Risk Level:** {risk_color.get(scan_result.risk_level, '?')} {scan_result.risk_level}")
                             
                             st.markdown(f"**Scan Method:** {scan_result.scan_method}")
                             st.markdown(f"**Dependencies Found:** {scan_result.dependencies_found}")
@@ -678,7 +679,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
                                         if vuln.fix_version:
                                             st.markdown(f"**Fix Version:** {vuln.fix_version}")
                             else:
-                                st.success("No vulnerabilities detected! ✅")
+                                st.success("No vulnerabilities detected! ?")
                         finally:
                             shutil.rmtree(repo_path, ignore_errors=True)
                     else:
@@ -691,7 +692,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
                 
                 st.divider()
                 
-                st.markdown("<h4 class=\"section-header\">📜 License Check</h4>", unsafe_allow_html=True)
+                st.markdown("<h4 class=\"section-header\">?? License Check</h4>", unsafe_allow_html=True)
                 try:
                     from license_checker import check_license_from_repo
                     
@@ -701,7 +702,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
                     lic_col1.markdown(f"**License:** {lic_result.license_info.name if lic_result.license_info else 'Unknown'}")
                     lic_col1.markdown(f"**SPDX:** {lic_result.license_info.spdx_id if lic_result.license_info else 'NOASSERTION'}")
                     lic_col2.markdown(f"**Compliance Score:** {lic_result.compliance_score}/100")
-                    lic_col2.markdown(f"**Commercial Compatible:** {'✅ Yes' if lic_result.commercial_compatible else '❌ No'}")
+                    lic_col2.markdown(f"**Commercial Compatible:** {'? Yes' if lic_result.commercial_compatible else '? No'}")
                     
                     if lic_result.warnings:
                         for warning in lic_result.warnings:
@@ -713,9 +714,10 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
             # ==================== TAB 5: TRENDS ====================
             with tab_trends:
-                st.markdown("<h3 class=\"section-header\">📈 Trend Analysis</h3>", unsafe_allow_html=True)
+                st.markdown("<h3 class=\"section-header\">?? Trend Analysis</h3>", unsafe_allow_html=True)
                 
-                try:
+                with st.spinner("Analyzing trends..."):
+                    try:
                     from trends_analyzer import analyze_repository, get_trend_summary
                     
                     trend_analysis = analyze_repository(repo_input, features, headers)
@@ -748,7 +750,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
             @st.fragment
             def render_report_tab():
                 with tab_report:
-                    st.markdown("<h3 class=\"section-header\">📄 Quality Report</h3>", unsafe_allow_html=True)
+                    st.markdown("<h3 class=\"section-header\">?? Quality Report</h3>", unsafe_allow_html=True)
                     
                     report_format = st.selectbox("Report Format", ["html", "json"], label_visibility="collapsed")
                     
@@ -787,3 +789,4 @@ if st.button("Predict Quality", type="primary") and repo_input:
                                 st.error(f"Report generation failed: {str(err)}")
             
             render_report_tab()
+

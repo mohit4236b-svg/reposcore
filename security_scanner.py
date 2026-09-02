@@ -48,8 +48,21 @@ class SecurityScanResult:
     timestamp: str
 
 
+def _validate_repo_path(path: str) -> bool:
+    \"\"\"Validate that path is a safe directory within allowed bounds.\"\"\"
+    if not path or not os.path.isdir(path):
+        return False
+    temp_base = tempfile.gettempdir()
+    try:
+        abs_path = os.path.abspath(path)
+        abs_base = os.path.abspath(temp_base)
+        return abs_path.startswith(abs_base)
+    except Exception:
+        return False
+
+
 def parse_severity(severity_str: str) -> Severity:
-    """Convert string severity to Severity enum."""
+    \"\"\"Convert string severity to Severity enum.\"\"\"
     severity_str = severity_str.upper().strip()
     if severity_str in ("CRITICAL", "9.0", "10.0"):
         return Severity.CRITICAL
@@ -63,12 +76,15 @@ def parse_severity(severity_str: str) -> Severity:
 
 
 def scan_pip_audit(repo_path: str) -> Optional[Dict[str, Any]]:
-    """
+    \"\"\"
     Run pip-audit on a Python repository to find vulnerabilities.
     
     Returns:
         Parsed pip-audit output or None if pip-audit is not available
-    """
+    \"\"\"
+    if not _validate_repo_path(repo_path):
+        return None
+
     requirements_files = [
         os.path.join(repo_path, "requirements.txt"),
         os.path.join(repo_path, "pyproject.toml"),
@@ -78,7 +94,7 @@ def scan_pip_audit(repo_path: str) -> Optional[Dict[str, Any]]:
     
     requirements_file = None
     for f in requirements_files:
-        if os.path.exists(f):
+        if os.path.exists(f) and _validate_repo_path(os.path.dirname(f)):
             requirements_file = f
             break
     
@@ -105,15 +121,18 @@ def scan_pip_audit(repo_path: str) -> Optional[Dict[str, Any]]:
 
 
 def scan_safety(repo_path: str) -> Optional[List[Dict[str, Any]]]:
-    """
+    \"\"\"
     Run safety CLI to check for vulnerabilities.
     
     Returns:
         List of vulnerabilities found or None if safety is not available
-    """
+    \"\"\"
+    if not _validate_repo_path(repo_path):
+        return None
+
     requirements_file = os.path.join(repo_path, "requirements.txt")
     
-    if not os.path.exists(requirements_file):
+    if not os.path.exists(requirements_file) or not _validate_repo_path(os.path.dirname(requirements_file)):
         return None
     
     try:
@@ -139,7 +158,7 @@ def scan_safety(repo_path: str) -> Optional[List[Dict[str, Any]]]:
 
 
 def parse_requirements_file(file_path: str) -> List[Dict[str, str]]:
-    """Parse a requirements.txt file and extract package names and versions."""
+    \"\"\"Parse a requirements.txt file and extract package names and versions.\"\"\"
     packages = []
     
     if not os.path.exists(file_path):
@@ -172,10 +191,13 @@ def parse_requirements_file(file_path: str) -> List[Dict[str, str]]:
 
 
 def scan_package_json(repo_path: str) -> Optional[Dict[str, Any]]:
-    """Scan package.json for known vulnerable npm packages using npm audit."""
+    \"\"\"Scan package.json for known vulnerable npm packages using npm audit.\"\"\"
+    if not _validate_repo_path(repo_path):
+        return None
+
     package_json_path = os.path.join(repo_path, "package.json")
     
-    if not os.path.exists(package_json_path):
+    if not os.path.exists(package_json_path) or not _validate_repo_path(os.path.dirname(package_json_path)):
         return None
     
     try:
@@ -198,7 +220,10 @@ def scan_package_json(repo_path: str) -> Optional[Dict[str, Any]]:
 
 
 def detect_dependency_files(repo_path: str) -> List[str]:
-    """Detect all dependency files in a repository."""
+    \"\"\"Detect all dependency files in a repository.\"\"\"
+    if not _validate_repo_path(repo_path):
+        return []
+        
     dep_files = []
     
     dep_patterns = [
@@ -232,7 +257,7 @@ def detect_dependency_files(repo_path: str) -> List[str]:
 
 
 def calculate_risk_level(vulns: List[Vulnerability]) -> str:
-    """Calculate overall risk level based on vulnerabilities found."""
+    \"\"\"Calculate overall risk level based on vulnerabilities found.\"\"\"
     critical = sum(1 for v in vulns if v.severity == Severity.CRITICAL)
     high = sum(1 for v in vulns if v.severity == Severity.HIGH)
     medium = sum(1 for v in vulns if v.severity == Severity.MEDIUM)
@@ -250,7 +275,7 @@ def calculate_risk_level(vulns: List[Vulnerability]) -> str:
 
 
 def scan_repository(repo_path: str) -> SecurityScanResult:
-    """
+    \"\"\"
     Perform comprehensive security scan on a repository.
     
     Args:
@@ -258,7 +283,7 @@ def scan_repository(repo_path: str) -> SecurityScanResult:
         
     Returns:
         SecurityScanResult with all findings
-    """
+    \"\"\"
     from datetime import datetime
     
     vulnerabilities = []
@@ -328,7 +353,7 @@ def scan_repository(repo_path: str) -> SecurityScanResult:
 
 
 def get_vulnerability_summary(result: SecurityScanResult) -> str:
-    """Generate a human-readable summary of the security scan."""
+    \"\"\"Generate a human-readable summary of the security scan.\"\"\"
     if result.total_vulnerabilities == 0:
         return f"No vulnerabilities found in {result.dependencies_found} dependencies scanned."
     

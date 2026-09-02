@@ -1,10 +1,10 @@
 # =============================================================================
-# RepoScore - Streamlit Application Container
+# RepoScore API - FastAPI Backend Container
 # =============================================================================
-# Multi-stage build for optimized production image
+# Optimized for FastAPI/Uvicorn with rate limiting and Redis caching
 #
-# Build: docker build -t reposcore/app:latest .
-# Run:   docker run -p 8501:8501 -e GITHUB_TOKEN=xxx reposcore/app:latest
+# Build: docker build -f Dockerfile.api -t reposcore/api:latest .
+# Run:   docker run -p 8000:8000 -e GITHUB_TOKEN=xxx reposcore/api:latest
 # =============================================================================
 
 FROM python:3.12-slim AS builder
@@ -13,6 +13,7 @@ FROM python:3.12-slim AS builder
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     build-essential \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Create virtual environment
@@ -20,7 +21,7 @@ RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 # Install Python dependencies
-COPY requirements.txt /tmp/requirements.txt
+COPY requirements-api.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 # =============================================================================
@@ -45,15 +46,20 @@ ENV PATH="/opt/venv/bin:$PATH"
 WORKDIR /app
 
 # Copy application code
-COPY --chown=appuser:appgroup app.py reposcore_utils.py scoring_engine.py license_checker.py
-COPY --chown=appuser:appgroup security_scanner.py trends_analyzer.py report_generator.py
-COPY --chown=appuser:appgroup cache_layer.py badge_generator.py ai_review.py
-COPY --chown=appuser:appgroup api_server.py
+COPY --chown=appuser:appgroup api_server.py api_server.py
+COPY --chown=appuser:appgroup reposcore_utils.py reposcore_utils.py
+COPY --chown=appuser:appgroup scoring_engine.py scoring_engine.py
+COPY --chown=appuser:appgroup license_checker.py license_checker.py
+COPY --chown=appuser:appgroup security_scanner.py security_scanner.py
+COPY --chown=appuser:appgroup trends_analyzer.py trends_analyzer.py
+COPY --chown=appuser:appgroup report_generator.py report_generator.py
+COPY --chown=appuser:appgroup cache_layer.py cache_layer.py
+COPY --chown=appuser:appgroup badge_generator.py badge_generator.py
+COPY --chown=appuser:appgroup ai_review.py ai_review.py
 COPY --chown=appuser:appgroup models/ models/
-COPY --chown=appuser:appgroup .streamlit/ .streamlit/
 
-# Create necessary directories
-RUN mkdir -p audit_trail && chown -R appuser:appgroup /app
+# Create directories
+RUN mkdir -p /app/audit_trail && chown -R appuser:appgroup /app
 
 # Switch to non-root user
 USER appuser
@@ -61,15 +67,13 @@ USER appuser
 # Environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV STREAMLIT_SERVER_PORT=8501
-ENV STREAMLIT_SERVER_HEADLESS=true
 
-# Expose Streamlit port
-EXPOSE 8501
+# Expose API port
+EXPOSE 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8501/_stcore/health || exit 1
+    CMD curl -f http://localhost:8000/api/health || exit 1
 
-# Run Streamlit
-CMD ["streamlit", "run", "app.py", "--server.address", "0.0.0.0", "--server.port", "8501"]
+# Run FastAPI with Uvicorn
+CMD ["uvicorn", "api_server:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]

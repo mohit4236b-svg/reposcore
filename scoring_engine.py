@@ -41,15 +41,38 @@ class RepoScorer:
     4. Contributor Distribution (20%)
     """
     
-    DIMENSION_WEIGHTS = {
+    DEFAULT_WEIGHTS = {
         "maintenance": 0.30,
         "community": 0.25,
         "docs": 0.25,
         "contributors": 0.20
     }
     
-    def __init__(self):
+    def __init__(self, weights: Dict[str, float] = None):
         self.tiers = RATING_TIERS
+        self.DIMENSION_WEIGHTS = weights if weights else self._load_weights_from_env()
+    
+    def _load_weights_from_env(self) -> Dict[str, float]:
+        import os
+        weights = self.DEFAULT_WEIGHTS.copy()
+        for env_key, weight_key in [
+            ('REPOSCORE_WEIGHT_MAINTENANCE', 'maintenance'),
+            ('REPOSCORE_WEIGHT_COMMUNITY', 'community'),
+            ('REPOSCORE_WEIGHT_DOCS', 'docs'),
+            ('REPOSCORE_WEIGHT_CONTRIBUTORS', 'contributors')
+        ]:
+            env_value = os.getenv(env_key)
+            if env_value:
+                try:
+                    weights[weight_key] = float(env_value)
+                except ValueError:
+                    pass
+        return weights
+    
+    def set_weights(self, weights: Dict[str, float]) -> None:
+        if abs(sum(weights.values()) - 1.0) > 0.001:
+            raise ValueError('Weights must sum to 1.0')
+        self.DIMENSION_WEIGHTS = weights
     
     def calculate_score(self, features: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -552,3 +575,8 @@ class RepoScorer:
             "factors_count": len(factors),
             "calculated_at": datetime.utcnow().isoformat()
         }
+
+
+
+
+
