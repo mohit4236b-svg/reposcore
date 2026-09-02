@@ -1438,59 +1438,59 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
                     try:
 
-                    from trends_analyzer import analyze_repository, get_trend_summary
+                        from trends_analyzer import analyze_repository, get_trend_summary
 
                     
 
-                    trend_analysis = analyze_repository(repo_input, features, headers)
+                        trend_analysis = analyze_repository(repo_input, features, headers)
 
                     
 
-                    trend_col1, trend_col2, trend_col3, trend_col4 = st.columns(4)
+                        trend_col1, trend_col2, trend_col3, trend_col4 = st.columns(4)
 
-                    trend_col1.metric("Star Growth (30d)", f"{trend_analysis.star_growth_rate_30d:+.1f}%")
+                        trend_col1.metric("Star Growth (30d)", f"{trend_analysis.star_growth_rate_30d:+.1f}%")
 
-                    trend_col2.metric("Star Growth (90d)", f"{trend_analysis.star_growth_rate_90d:+.1f}%")
+                        trend_col2.metric("Star Growth (90d)", f"{trend_analysis.star_growth_rate_90d:+.1f}%")
 
-                    trend_col3.metric("Commits (90d)", trend_analysis.commit_activity_90d)
+                        trend_col3.metric("Commits (90d)", trend_analysis.commit_activity_90d)
 
-                    trend_col4.metric("Health Score", trend_analysis.health_score,
+                        trend_col4.metric("Health Score", trend_analysis.health_score,
 
-                                     delta=trend_analysis.health_status.title())
-
-                    
-
-                    st.markdown(f"**Trend Direction:** {trend_analysis.trend_direction.title()}")
-
-                    st.markdown(f"**Activity Trend:** {trend_analysis.activity_trend.title()}")
-
-                    st.markdown(f"**Commit Frequency:** {trend_analysis.commit_frequency.replace('_', ' ').title()}")
-
-                    st.markdown(f"**Fork Ratio:** {trend_analysis.fork_ratio:.3f} ({trend_analysis.fork_ratio_interpretation.replace('_', ' ').title()})")
+                                         delta=trend_analysis.health_status.title())
 
                     
 
-                    if trend_analysis.stars_30d_ago:
+                        st.markdown(f"**Trend Direction:** {trend_analysis.trend_direction.title()}")
 
-                        st.markdown(f"**Stars 30 days ago:** {trend_analysis.stars_30d_ago:,}")
+                        st.markdown(f"**Activity Trend:** {trend_analysis.activity_trend.title()}")
 
-                    if trend_analysis.stars_90d_ago:
+                        st.markdown(f"**Commit Frequency:** {trend_analysis.commit_frequency.replace('_', ' ').title()}")
 
-                        st.markdown(f"**Stars 90 days ago:** {trend_analysis.stars_90d_ago:,}")
-
-                    
-
-                    st.markdown(f"**Summary:** {get_trend_summary(trend_analysis)}")
+                        st.markdown(f"**Fork Ratio:** {trend_analysis.fork_ratio:.3f} ({trend_analysis.fork_ratio_interpretation.replace('_', ' ').title()})")
 
                     
 
-                except ImportError:
+                        if trend_analysis.stars_30d_ago:
 
-                    st.caption("Trend analyzer not available")
+                            st.markdown(f"**Stars 30 days ago:** {trend_analysis.stars_30d_ago:,}")
 
-                except Exception as err:
+                        if trend_analysis.stars_90d_ago:
 
-                    st.error(f"Trend analysis failed: {str(err)}")
+                            st.markdown(f"**Stars 90 days ago:** {trend_analysis.stars_90d_ago:,}")
+
+                    
+
+                        st.markdown(f"**Summary:** {get_trend_summary(trend_analysis)}")
+
+                    
+
+                    except ImportError:
+
+                        st.caption("Trend analyzer not available")
+
+                    except Exception as err:
+
+                        st.error(f"Trend analysis failed: {str(err)}")
 
 
 
