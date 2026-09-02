@@ -1048,7 +1048,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
                     explainer = load_explainer(rf_model)
 
-                    shap_values = explainer.shap_values(X_dense, check_additivity=False)
+                    shap_values = explainer.shap_values(X_dense)
 
                     if isinstance(shap_values, list):
 
@@ -1304,7 +1304,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
                     
 
-                        if repo_path:
+                        if repo_path and os.path.exists(repo_path):
 
                             try:
 
@@ -1495,8 +1495,6 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
 
             # ==================== TAB 6: REPORT ====================
-
-            @st.fragment
 
             def render_report_tab():
 
