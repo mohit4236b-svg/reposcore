@@ -310,7 +310,7 @@ def render_note(text):
 
     """Muted neutral style for informational asides like 'No topics specified.'"""
 
-    st.markdown(f'<div class="rs-note">?? {text}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="rs-note">ℹ️ {text}</div>', unsafe_allow_html=True)
 
 
 
@@ -790,19 +790,19 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
                     score_color = "green"
 
-                    score_emoji = "??"
+                    score_emoji = "🚀"
 
                 elif combined_score >= 40:
 
                     score_color = "orange"
 
-                    score_emoji = "??"
+                    score_emoji = "⚠️"
 
                 else:
 
                     score_color = "red"
 
-                    score_emoji = "??"
+                    score_emoji = "❌"
 
 
 
@@ -964,11 +964,11 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
                     for exc in exceptions:
 
-                        notes.append(f'<div class="rs-note">?? {exc}</div>')
+                        notes.append(f'<div class="rs-note">ℹ️ {exc}</div>')
 
                     if low_confidence:
 
-                        notes.append('<div class="rs-note">?? Low confidence prediction (probability near 0.5).</div>')
+                        notes.append('<div class="rs-note">ℹ️ Low confidence prediction (probability near 0.5).</div>')
 
                     data_quality_html = f'<div style="margin-top: 1rem;"><strong>Data Quality Notes</strong>{"".join(notes)}</div>'
 
