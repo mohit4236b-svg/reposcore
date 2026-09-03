@@ -65,7 +65,7 @@ def fetch_repo_features(full_name, headers=None):
     headers = headers or {}
     full_name = full_name.strip().strip("/")
 
-    repo_resp = requests.get(f"https://api.github.com/repos/{full_name}", headers=headers)
+    repo_resp = requests.get(f"https://api.github.com/repos/{full_name}", headers=headers, timeout=10)
     if repo_resp.status_code == 404:
         raise RepoFetchError(f"Repository '{full_name}' not found.")
     if repo_resp.status_code == 403:
@@ -78,7 +78,7 @@ def fetch_repo_features(full_name, headers=None):
         raise RepoFetchError(f"GitHub API returned status {repo_resp.status_code}.")
     repo = repo_resp.json()
 
-    readme_resp = requests.get(f"https://api.github.com/repos/{full_name}/readme", headers=headers)
+    readme_resp = requests.get(f"https://api.github.com/repos/{full_name}/readme", headers=headers, timeout=10)
     if readme_resp.status_code == 403:
         retry_after = int(readme_resp.headers.get("Retry-After", 60))
         raise RateLimitedRepoFetchError(
@@ -101,7 +101,8 @@ def fetch_repo_features(full_name, headers=None):
         contribs_resp = requests.get(
             f"https://api.github.com/repos/{full_name}/contributors",
             headers=headers,
-            params={"per_page": 1}
+            params={"per_page": 1},
+            timeout=10
         )
         if contribs_resp.status_code == 200:
             # Use Link header to get total count if available
@@ -119,7 +120,7 @@ def fetch_repo_features(full_name, headers=None):
         pass  # Don't fail if contributor fetch fails
 
     # Detect CI from .github/workflows directory (matching training pipeline)
-    ci_resp = requests.get(f"https://api.github.com/repos/{full_name}/contents/.github/workflows", headers=headers)
+    ci_resp = requests.get(f"https://api.github.com/repos/{full_name}/contents/.github/workflows", headers=headers, timeout=10)
     if ci_resp.status_code == 403:
         retry_after = int(ci_resp.headers.get("Retry-After", 60))
         raise RateLimitedRepoFetchError(
@@ -129,7 +130,7 @@ def fetch_repo_features(full_name, headers=None):
     has_ci = ci_resp.status_code == 200
 
     # Detect tests from tests/ directory (matching training pipeline)
-    tests_resp = requests.get(f"https://api.github.com/repos/{full_name}/contents/tests", headers=headers)
+    tests_resp = requests.get(f"https://api.github.com/repos/{full_name}/contents/tests", headers=headers, timeout=10)
     if tests_resp.status_code == 403:
         retry_after = int(tests_resp.headers.get("Retry-After", 60))
         raise RateLimitedRepoFetchError(
@@ -142,7 +143,7 @@ def fetch_repo_features(full_name, headers=None):
     has_license = repo.get("license") is not None
 
     # Detect CONTRIBUTING.md in repo root (case-insensitive via GitHub API)
-    contributing_resp = requests.get(f"https://api.github.com/repos/{full_name}/contents/CONTRIBUTING.md", headers=headers)
+    contributing_resp = requests.get(f"https://api.github.com/repos/{full_name}/contents/CONTRIBUTING.md", headers=headers, timeout=10)
     if contributing_resp.status_code == 403:
         retry_after = int(contributing_resp.headers.get("Retry-After", 60))
         raise RateLimitedRepoFetchError(
@@ -152,7 +153,7 @@ def fetch_repo_features(full_name, headers=None):
     has_contributing = contributing_resp.status_code == 200
 
     # Detect CODE_OF_CONDUCT.md in repo root (case-insensitive via GitHub API)
-    coc_resp = requests.get(f"https://api.github.com/repos/{full_name}/contents/CODE_OF_CONDUCT.md", headers=headers)
+    coc_resp = requests.get(f"https://api.github.com/repos/{full_name}/contents/CODE_OF_CONDUCT.md", headers=headers, timeout=10)
     if coc_resp.status_code == 403:
         retry_after = int(coc_resp.headers.get("Retry-After", 60))
         raise RateLimitedRepoFetchError(
