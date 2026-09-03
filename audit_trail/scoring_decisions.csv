@@ -42,3 +42,4 @@ timestamp,repo_id,repo_url,stars,forks,open_issues,readme_size,repo_age_days,day
 2026-08-30T21:04:12.524211,this-repo-definitely-does-not-exist-12345/foo,https://github.com/this-repo-definitely-does-not-exist-12345/foo,0,0,0,0,0,0,0,0,0.000000,0,0.30
 2026-08-30T21:17:42.608777,this-repo-definitely-does-not-exist-12345/foo,https://github.com/this-repo-definitely-does-not-exist-12345/foo,0,0,0,0,0,0,0,0,0.000000,0,0.30
 2026-08-30T21:18:56.890585,this-repo-definitely-does-not-exist-12345/foo,https://github.com/this-repo-definitely-does-not-exist-12345/foo,0,0,0,0,0,0,0,0,0.000000,0,0.65
+2026-09-03T21:38:01.517400,razorpay/go-financial,https://github.com/razorpay/go-financial,317,28,15,20097,2094,31,1,0,0.160000,0,0.30
