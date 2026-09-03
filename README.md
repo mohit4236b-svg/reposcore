@@ -215,7 +215,7 @@ Without `GITHUB_TOKEN`, the GitHub API rate limit is 60 requests per hour; with 
 
  **Important for Streamlit Cloud deployment:** The live demo at [reposcoree.streamlit.app](https://reposcoree.streamlit.app) will exceed the 60 req/hour unauthenticated limit quickly, causing it to fail on many repos. To deploy your own instance or ensure the demo works reliably for local testing, set `GITHUB_TOKEN` and `NVIDIA_API_KEY` in:
  - **Local `.env` file** (shown above), or
- - **Streamlit Cloud secrets**: In your app's settings ? Secrets ? add both `GITHUB_TOKEN=your_token_here` and `NVIDIA_API_KEY=your_nvidia_api_key_here`
+ - **Streamlit Cloud secrets**: In your app's settings -> Secrets -> add both `GITHUB_TOKEN=your_token_here` and `NVIDIA_API_KEY=your_nvidia_api_key_here`
 
 ## CLI usage
 
