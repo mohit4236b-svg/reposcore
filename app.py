@@ -820,7 +820,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
     </div>
 
-    <div style="font-size: 0.9em; color: #cbd5e0; margin-top: 0.5rem;">{combined_score:.1f}% � 50% ML Model + 50% Heuristic</div>
+    <div style="font-size: 0.9em; color: #cbd5e0; margin-top: 0.5rem;">{combined_score:.1f}% ?? 50% ML Model + 50% Heuristic</div>
 
 </div>
 
@@ -866,7 +866,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
                 if divergence > 15:
 
-                    render_caution(f"ML and Heuristic scores diverge by {divergence:.1f} points � treat this combined score with caution; review both scores individually in the **Why This Score?** tab.")
+                    render_caution(f"ML and Heuristic scores diverge by {divergence:.1f} points ?? treat this combined score with caution; review both scores individually in the **Why This Score?** tab.")
 
 
 
@@ -1198,7 +1198,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
                         if abs(delta) > 15:
 
-                            render_caution(f"ML and Heuristic scores diverge by {abs(delta):.1f} points � treat this combined score with caution; review both scores individually in the Why This Score? tab.")
+                            render_caution(f"ML and Heuristic scores diverge by {abs(delta):.1f} points ?? treat this combined score with caution; review both scores individually in the Why This Score? tab.")
 
                         else:
 
@@ -1210,7 +1210,7 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
                             for exp in heuristic_result['explanations'][:3]:  # Show top 3
 
-                                st.write(f"� {exp}")
+                                st.write(f"?? {exp}")
 
                         st.markdown('</div>', unsafe_allow_html=True)
 
