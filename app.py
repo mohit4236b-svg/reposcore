@@ -440,37 +440,35 @@ if st.button("Predict Quality", type="primary") and repo_input:
                     except Exception as err:
                         st.error(f"Trend analysis failed: {str(err)}")
 
-            def render_report_tab():
-                with tab_report:
-                    st.markdown("<h3 class=\"section-header\">📑 Quality Report</h3>", unsafe_allow_html=True)
-                    report_format = st.selectbox("Report Format", ["html", "json"], label_visibility="collapsed")
-                    if st.button("Generate Report", type="primary"):
-                        with st.spinner("Generating report..."):
-                            try:
-                                from report_generator import generate_report
-                                report_content = generate_report(
-                                    full_name=features["full_name"],
-                                    html_url=features.get("html_url", ""),
-                                    features=features,
-                                    ml_probability=probability,
-                                    heuristic_score=heuristic_result,
-                                    combined_score=combined_score if combined_score else (probability * 100 + heuristic_result.get("total_score", 0)) / 2,
-                                    format=report_format
+            with tab_report:
+                st.markdown("<h3 class=\"section-header\">📑 Quality Report</h3>", unsafe_allow_html=True)
+                report_format = st.selectbox("Report Format", ["html", "json"], label_visibility="collapsed")
+                if st.button("Generate Report", type="primary"):
+                    with st.spinner("Generating report..."):
+                        try:
+                            from report_generator import generate_report
+                            report_content = generate_report(
+                                full_name=features["full_name"],
+                                html_url=features.get("html_url", ""),
+                                features=features,
+                                ml_probability=probability,
+                                heuristic_score=heuristic_result,
+                                combined_score=combined_score if combined_score else (probability * 100 + heuristic_result.get("total_score", 0)) / 2,
+                                format=report_format
+                            )
+                            if report_format == "json":
+                                st.json(json.loads(report_content))
+                            else:
+                                st.markdown("### Report Preview")
+                                st.components.v1.html(report_content, height=600, scrolling=True)
+                                report_bytes = report_content.encode()
+                                st.download_button(
+                                    label="Download Report",
+                                    data=report_bytes,
+                                    file_name=f"reposcore_report_{features['full_name'].replace('/', '_')}.html",
+                                    mime="text/html"
                                 )
-                                if report_format == "json":
-                                    st.json(json.loads(report_content))
-                                else:
-                                    st.markdown("### Report Preview")
-                                    st.components.v1.html(report_content, height=600, scrolling=True)
-                                    report_bytes = report_content.encode()
-                                    st.download_button(
-                                        label="Download Report",
-                                        data=report_bytes,
-                                        file_name=f"reposcore_report_{features['full_name'].replace('/', '_')}.html",
-                                        mime="text/html"
-                                    )
-                            except ImportError:
-                                st.caption("Report generator not available")
-                            except Exception as err:
-                                st.error(f"Report generation failed: {str(err)}")
-            render_report_tab()
+                        except ImportError:
+                            st.caption("Report generator not available")
+                        except Exception as err:
+                            st.error(f"Report generation failed: {str(err)}")
