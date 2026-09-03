@@ -1,10 +1,10 @@
-# ⭐RepoScore: GitHub Repository Quality Predictor
+﻿# â­RepoScore: GitHub Repository Quality Predictor
 
 [![CI](https://github.com/mohit4236b-svg/reposcore/actions/workflows/ci.yml/badge.svg)](https://github.com/mohit4236b-svg/reposcore/actions/workflows/ci.yml)
 
 RepoScore predicts whether a GitHub repository is likely to be a "high-quality" project based on its metadata, README content, and topic tags. Enter any public GitHub repo and get an instant quality prediction, powered by a Random Forest classifier trained on ~2,200 real repositories.
 
-**Live demo:** [reposcoree.streamlit.app](https://reposcoree.streamlit.app/) â€” paste a repo (e.g. `scikit-learn/scikit-learn`) and get a prediction with confidence score and a feature-level explanation.
+**Live demo:** [reposcoree.streamlit.app](https://reposcoree.streamlit.app/) Ã¢â‚¬â€ paste a repo (e.g. `scikit-learn/scikit-learn`) and get a prediction with confidence score and a feature-level explanation.
 
 ---
 
@@ -67,14 +67,14 @@ Add this to your README:
 
 ## What "quality" means here
 
-There's no built-in "quality" label on GitHub â€” I had to define one. After testing a stricter version (requiring both CI *and* tests), which produced a heavily imbalanced dataset (~87% negative class), I settled on:
+There's no built-in "quality" label on GitHub Ã¢â‚¬â€ I had to define one. After testing a stricter version (requiring both CI *and* tests), which produced a heavily imbalanced dataset (~87% negative class), I settled on:
 
 ```
 quality = 1 if (stars_per_month > median) AND (has_ci OR has_tests)
 quality = 0 otherwise
 ```
 
-A repo counts as "quality" if it's gaining stars faster than the median repo in the dataset **and** has at least one sign of engineering discipline (a CI pipeline or a tests folder). This is a deliberately simple, defensible proxy â€” not a claim about code quality itself, which isn't something you can fully infer from metadata.
+A repo counts as "quality" if it's gaining stars faster than the median repo in the dataset **and** has at least one sign of engineering discipline (a CI pipeline or a tests folder). This is a deliberately simple, defensible proxy Ã¢â‚¬â€ not a claim about code quality itself, which isn't something you can fully infer from metadata.
 
 ## Dataset
 
@@ -90,7 +90,7 @@ A repo counts as "quality" if it's gaining stars faster than the median repo in 
 - README content (500 features)
 - Topic tags (100 features)
 
-**Deliberately excluded:** `has_ci`, `has_tests`, and `stars_per_month` are *not* used as model features, since they were used to construct the label itself â€” including them would be data leakage (the model predicting from its own answer key).
+**Deliberately excluded:** `has_ci`, `has_tests`, and `stars_per_month` are *not* used as model features, since they were used to construct the label itself Ã¢â‚¬â€ including them would be data leakage (the model predicting from its own answer key).
 
 ## Results
 
@@ -101,26 +101,26 @@ Earlier versions of this README reported 0.89 accuracy / 0.80 F1 from a single t
 
 The honest numbers, from 5-fold stratified cross-validation on badge-stripped README text:
 
-| Metric | Mean Â± std (5-fold CV) |
+| Metric | Mean Ã‚Â± std (5-fold CV) |
 |---|---|
-| F1 (class 1) | 0.610 Â± 0.053 |
-| Precision (class 1) | 0.904 Â± 0.048 |
-| Recall (class 1) | 0.463 Â± 0.057 |
+| F1 (class 1) | 0.610 Ã‚Â± 0.053 |
+| Precision (class 1) | 0.904 Ã‚Â± 0.048 |
+| Recall (class 1) | 0.463 Ã‚Â± 0.057 |
 
 For comparison, here's the effect of the badge-stripping fix in isolation, both evaluated the same way (5-fold CV):
 
 | Setup | F1 | Precision | Recall |
 |---|---|---|---|
-| Raw README (badges included) | 0.658 Â± 0.043 | 0.898 Â± 0.027 | 0.520 Â± 0.049 |
-| **Badges stripped (current)** | **0.610 Â± 0.053** | **0.904 Â± 0.048** | **0.463 Â± 0.057** |
+| Raw README (badges included) | 0.658 Ã‚Â± 0.043 | 0.898 Ã‚Â± 0.027 | 0.520 Ã‚Â± 0.049 |
+| **Badges stripped (current)** | **0.610 Ã‚Â± 0.053** | **0.904 Ã‚Â± 0.048** | **0.463 Ã‚Â± 0.057** |
 
-Stripping badges drops F1 by about 5 points â€” that gap **is** the leaked signal being removed. Precision barely moves; recall drops, meaning some of what the raw-badge model was "detecting" was really just reading CI badges, not README quality.
+Stripping badges drops F1 by about 5 points Ã¢â‚¬â€ that gap **is** the leaked signal being removed. Precision barely moves; recall drops, meaning some of what the raw-badge model was "detecting" was really just reading CI badges, not README quality.
 
 A single held-out 80/20 split (used only to produce the confusion matrix and save the deployed model) gives:
 
 | Model | Accuracy | Class 1 Precision | Class 1 Recall | Class 1 F1 | ROC-AUC |
 |---|---|---|---|---|---|
-| Logistic Regression | 0.71 | 0.50 | 0.65 | 0.56 | â€” |
+| Logistic Regression | 0.71 | 0.50 | 0.65 | 0.56 | Ã¢â‚¬â€ |
 | **Random Forest** | **0.83** | **0.88** | **0.50** | **0.63** | **0.94** |
 
 Confusion matrix (Random Forest, held-out set, `[[TN, FP], [FN, TP]]`):
@@ -137,7 +137,7 @@ After removing badge markup, repo activity signals (`stars`, `days_since_last_co
 
 ## Known limitations
 
-- **Recall at the default threshold (0.893 CV, 0.50 held-out) is much improved** — the model now catches ~89% of true "quality" repos at the default 0.3 cutoff (F1=0.762). This turned out to be a threshold choice, not a fixed ceiling: the default 0.3 is F1-optimal. 5-fold CV across thresholds:
+- **Recall at the default threshold (0.893 CV, 0.50 held-out) is much improved** â€” the model now catches ~89% of true "quality" repos at the default 0.3 cutoff (F1=0.762). This turned out to be a threshold choice, not a fixed ceiling: the default 0.3 is F1-optimal. 5-fold CV across thresholds:
 
   | Threshold | Precision | Recall | F1 |
   |---|---|---|---|
@@ -147,51 +147,51 @@ After removing badge markup, repo activity signals (`stars`, `days_since_last_co
   | 0.6 | 0.983 | 0.267 | 0.420 |
   | 0.7 | 1.000 | 0.121 | 0.216 |
 
-  F1 actually peaks around 0.3, not 0.5. Which threshold is "right" depends on the cost of a false negative vs. a false positive for your use case — there's a slider in the Streamlit app and a --threshold flag on the CLI to choose (see below) rather than a single hardcoded cutoff.
-- **Topic tags gave only a modest improvement** and didn't produce any single feature in the top 20 — likely because topic information overlaps with vocabulary already present in README text.
+  F1 actually peaks around 0.3, not 0.5. Which threshold is "right" depends on the cost of a false negative vs. a false positive for your use case â€” there's a slider in the Streamlit app and a --threshold flag on the CLI to choose (see below) rather than a single hardcoded cutoff.
+- **Topic tags gave only a modest improvement** and didn't produce any single feature in the top 20 â€” likely because topic information overlaps with vocabulary already present in README text.
 - **"Quality" is a proxy, not a ground truth.** Stars-per-month rewards popularity, which correlates with but doesn't equal code quality. A well-written internal tool with few stars would be scored "not quality" here.
 - **Badge stripping is regex-based, not exhaustive.** It targets shields.io, badge.fury.io, and similarly-structured badge hosts/markdown patterns; some CI-signal likely still leaks through badge formats the regex doesn't cover.
 - **No temporal validation:** The training dataset is a single point-in-time snapshot across a limited set of ML-focused topics. The model has not been evaluated on newer repositories or different domains, so generalization beyond the training distribution is unverified.
 - **Single-model deployment:** The system serves a single trained Random Forest artifact with no model versioning, A/B testing, or automatic fallback if the model fails to load. A model-loading failure would need manual intervention.
-- **Confidence score is under-calibrated at the high end.** Brier score is 0.115 (0=perfect, 0.25=random-guessing baseline), so it's meaningfully better than chance overall — but checking predicted-vs-observed in bins shows the model is somewhat *under*-confident on likely-quality repos (when it says ~60% confidence, the true rate in that bin is closer to 83%) and reasonably calibrated in the low range. Read the confidence score as directionally useful, not as a literal probability.
+- **Confidence score is under-calibrated at the high end.** Brier score is 0.115 (0=perfect, 0.25=random-guessing baseline), so it's meaningfully better than chance overall â€” but checking predicted-vs-observed in bins shows the model is somewhat *under*-confident on likely-quality repos (when it says ~60% confidence, the true rate in that bin is closer to 83%) and reasonably calibrated in the low range. Read the confidence score as directionally useful, not as a literal probability.
 
 ## What this would need to become production-grade
 
-Temporal validation would be needed to ensure the model generalizes to repos created after 2022, since ML models degrade as platform conventions evolve. A larger, regularly-refreshed dataset covering more topics (beyond the five collected) would improve topic coverage and reduce overfitting to specific domains. The model should be monitored for prediction driftâ€”features like README structure and topic tags change over time, and a rising Brier score or shifting calibration curve would signal when retraining is needed. Finally, a small set of human-labeled quality assessments would provide an independent check against the current proxy label (stars per month + CI/tests), helping validate whether the model's notion of "quality" aligns with actual human judgment.
+Temporal validation would be needed to ensure the model generalizes to repos created after 2022, since ML models degrade as platform conventions evolve. A larger, regularly-refreshed dataset covering more topics (beyond the five collected) would improve topic coverage and reduce overfitting to specific domains. The model should be monitored for prediction driftÃ¢â‚¬â€features like README structure and topic tags change over time, and a rising Brier score or shifting calibration curve would signal when retraining is needed. Finally, a small set of human-labeled quality assessments would provide an independent check against the current proxy label (stars per month + CI/tests), helping validate whether the model's notion of "quality" aligns with actual human judgment.
 
   ![Calibration reliability diagram](models/calibration_curve.png)
   *Reliability diagram: predicted probability bins vs. observed fraction positive. The gap between the diagonal (perfect calibration) and the blue points shows where the model is under- or over-confident.*
 
 ## Explainability
 
-The Streamlit app shows a per-prediction SHAP breakdown alongside the score â€” which specific features (README vocabulary, stars, activity, etc.) pushed this particular repo's prediction toward "high quality" or "low quality." This turns the Random Forest's output from a bare number into something a user can sanity-check against the repo they just looked up.
+The Streamlit app shows a per-prediction SHAP breakdown alongside the score Ã¢â‚¬â€ which specific features (README vocabulary, stars, activity, etc.) pushed this particular repo's prediction toward "high quality" or "low quality." This turns the Random Forest's output from a bare number into something a user can sanity-check against the repo they just looked up.
 
 ## Project structure
 
 ```
 reposcore/
-â”œâ”€â”€ app.py                          # Streamlit demo (predicts + explains with SHAP)
-â”œâ”€â”€ reposcore_cli.py                # Non-interactive CLI: JSON output, scriptable, CI-usable
-â”œâ”€â”€ reposcore_utils.py              # Shared fetch/featurize/predict logic used by BOTH
-â”‚                                    #   app.py and reposcore_cli.py, and shared preprocessing
-â”‚                                    #   (badge stripping) used by BOTH training and inference,
-â”‚                                    #   so none of the three can silently drift apart
-â”œâ”€â”€ notebooks/
-â”‚   â”œâ”€â”€ collect_repos.py            # Batch 1: search API collection
-â”‚   â”œâ”€â”€ enrich_repos.py             # Batch 1: README/CI/tests check
-â”‚   â”œâ”€â”€ fetch_readmes.py            # Batch 1: full README text
-â”‚   â”œâ”€â”€ collect_repos_batch2.py     # Batch 2: additional topics
-â”‚   â”œâ”€â”€ enrich_repos_batch2.py      # Batch 2: enrichment
-â”‚   â”œâ”€â”€ fetch_readmes_batch2.py     # Batch 2: README text
-â”‚   â”œâ”€â”€ fetch_topics.py             # Topic tags for full dataset
-â”‚   â”œâ”€â”€ build_dataset_v2.py         # Merge, clean, label
-â”‚   â””â”€â”€ train_model.py              # Train, CV-evaluate, save model + metrics report
-â”œâ”€â”€ tests/
-â”‚   â””â”€â”€ test_reposcore_utils.py     # Guards the badge-stripping fix + CLI error handling
-â”œâ”€â”€ .github/workflows/ci.yml        # Runs tests on every push/PR
-â”œâ”€â”€ requirements.txt                # Runtime dependencies
-â”œâ”€â”€ requirements-dev.txt            # + pytest, for running the test suite
-â””â”€â”€ README.md
+Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ app.py                          # Streamlit demo (predicts + explains with SHAP)
+Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ reposcore_cli.py                # Non-interactive CLI: JSON output, scriptable, CI-usable
+Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ reposcore_utils.py              # Shared fetch/featurize/predict logic used by BOTH
+Ã¢â€â€š                                    #   app.py and reposcore_cli.py, and shared preprocessing
+Ã¢â€â€š                                    #   (badge stripping) used by BOTH training and inference,
+Ã¢â€â€š                                    #   so none of the three can silently drift apart
+Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ notebooks/
+Ã¢â€â€š   Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ collect_repos.py            # Batch 1: search API collection
+Ã¢â€â€š   Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ enrich_repos.py             # Batch 1: README/CI/tests check
+Ã¢â€â€š   Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ fetch_readmes.py            # Batch 1: full README text
+Ã¢â€â€š   Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ collect_repos_batch2.py     # Batch 2: additional topics
+Ã¢â€â€š   Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ enrich_repos_batch2.py      # Batch 2: enrichment
+Ã¢â€â€š   Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ fetch_readmes_batch2.py     # Batch 2: README text
+Ã¢â€â€š   Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ fetch_topics.py             # Topic tags for full dataset
+Ã¢â€â€š   Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ build_dataset_v2.py         # Merge, clean, label
+Ã¢â€â€š   Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ train_model.py              # Train, CV-evaluate, save model + metrics report
+Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ tests/
+Ã¢â€â€š   Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ test_reposcore_utils.py     # Guards the badge-stripping fix + CLI error handling
+Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ .github/workflows/ci.yml        # Runs tests on every push/PR
+Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ requirements.txt                # Runtime dependencies
+Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ requirements-dev.txt            # + pytest, for running the test suite
+Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ README.md
 ```
 
 ## Running locally
@@ -199,6 +199,8 @@ reposcore/
 ```bash
 git clone https://github.com/mohit4236b-svg/reposcore.git
 cd reposcore
+git lfs install
+git lfs pull
 python -m venv venv
 venv\Scripts\activate       # Windows
 # source venv/bin/activate  # macOS/Linux
@@ -208,14 +210,14 @@ pip install -r requirements.txt
 Create a `.env` file with your own GitHub personal access token (optional but recommended):
  ```
 GITHUB_TOKEN=your_token_here
-GEMINI_API_KEY=your_gemini_api_key_here
+NVIDIA_API_KEY=your_nvidia_api_key_here
  ```
 
 Without `GITHUB_TOKEN`, the GitHub API rate limit is 60 requests per hour; with a token it increases to 5,000 per hour.
 
- **Important for Streamlit Cloud deployment:** The live demo at [reposcoree.streamlit.app](https://reposcoree.streamlit.app) will exceed the 60 req/hour unauthenticated limit quickly, causing it to fail on many repos. To deploy your own instance or ensure the demo works reliably for local testing, set `GITHUB_TOKEN` and `GEMINI_API_KEY` in:
+ **Important for Streamlit Cloud deployment:** The live demo at [reposcoree.streamlit.app](https://reposcoree.streamlit.app) will exceed the 60 req/hour unauthenticated limit quickly, causing it to fail on many repos. To deploy your own instance or ensure the demo works reliably for local testing, set `GITHUB_TOKEN` and `NVIDIA_API_KEY` in:
  - **Local `.env` file** (shown above), or
- - **Streamlit Cloud secrets**: In your app's settings \u2192 Secrets \u2192 add both `GITHUB_TOKEN=your_token_here` and `GEMINI_API_KEY=your_gemini_api_key_here`
+ - **Streamlit Cloud secrets**: In your app's settings → Secrets → add both `GITHUB_TOKEN=your_token_here` and `NVIDIA_API_KEY=your_nvidia_api_key_here`
 
 ## CLI usage
 
@@ -228,9 +230,9 @@ python reposcore_cli.py owner/repo --format csv > scores.csv
 python reposcore_cli.py owner/repo --threshold 0.5   # higher precision, lower recall
 ```
 
-Outputs JSON (default) or CSV (`--format csv`) with `predicted_quality`, `confidence`, `threshold`, and the underlying signal values per repo, and exits non-zero if any repo failed to score. The classification threshold defaults to 0.3 (F1-optimal per 5-fold CV) but is adjustable with `--threshold` â€” see "Known limitations" below for the precision/recall trade-off. The Streamlit app has the same option as a slider.
+Outputs JSON (default) or CSV (`--format csv`) with `predicted_quality`, `confidence`, `threshold`, and the underlying signal values per repo, and exits non-zero if any repo failed to score. The classification threshold defaults to 0.3 (F1-optimal per 5-fold CV) but is adjustable with `--threshold` Ã¢â‚¬â€ see "Known limitations" below for the precision/recall trade-off. The Streamlit app has the same option as a slider.
 
-Without `GITHUB_TOKEN` set, the GitHub API rate-limits at 60 requests/hour â€” for scoring more than a handful of repos, set the token in `.env` first (the same requirement [`ossf/criticality_score`](https://github.com/ossf/criticality_score), a similar tool from Google/OpenSSF, has for its own CLI).
+Without `GITHUB_TOKEN` set, the GitHub API rate-limits at 60 requests/hour Ã¢â‚¬â€ for scoring more than a handful of repos, set the token in `.env` first (the same requirement [`ossf/criticality_score`](https://github.com/ossf/criticality_score), a similar tool from Google/OpenSSF, has for its own CLI).
 
 ## Running tests
 
@@ -249,10 +251,10 @@ The test suite covers model loading, prediction validity/range checks, and FastA
 
 Two existing projects are worth comparing against directly:
 
-- **[`ossf/criticality_score`](https://github.com/ossf/criticality_score)** (Google/OpenSSF) scores OSS project *criticality* â€” a related but different question ("how important/depended-upon is this project" rather than "is this well-built") â€” using a transparent weighted formula over signals like contributor count, commit frequency, and dependency usage, with per-signal weights and thresholds you can override via a config file. It publishes its scored dataset (CSV + BigQuery) for thousands of repos and ships as a Go CLI. RepoScore's equivalent of that transparency is the SHAP breakdown per prediction â€” but a formula's weights are inspectable *before* you run it, where SHAP only explains *after* a specific prediction. That's a real trade-off, not just a difference in maturity: the ML approach picks up README-text signal a fixed formula can't, at the cost of a global weighting scheme you can read in one glance.
-- **[`clayallsopp/readme-score`](https://github.com/clayallsopp/readme-score)** scores README complexity specifically (not the whole repo) with a small heuristic Ruby gem, packaged with a hosted web checker and an HTTP API, plus an example-scores table in its own README. RepoScore's README-only signal is currently folded into the same model as repo metadata rather than broken out as its own score â€” a possible future split.
+- **[`ossf/criticality_score`](https://github.com/ossf/criticality_score)** (Google/OpenSSF) scores OSS project *criticality* Ã¢â‚¬â€ a related but different question ("how important/depended-upon is this project" rather than "is this well-built") Ã¢â‚¬â€ using a transparent weighted formula over signals like contributor count, commit frequency, and dependency usage, with per-signal weights and thresholds you can override via a config file. It publishes its scored dataset (CSV + BigQuery) for thousands of repos and ships as a Go CLI. RepoScore's equivalent of that transparency is the SHAP breakdown per prediction Ã¢â‚¬â€ but a formula's weights are inspectable *before* you run it, where SHAP only explains *after* a specific prediction. That's a real trade-off, not just a difference in maturity: the ML approach picks up README-text signal a fixed formula can't, at the cost of a global weighting scheme you can read in one glance.
+- **[`clayallsopp/readme-score`](https://github.com/clayallsopp/readme-score)** scores README complexity specifically (not the whole repo) with a small heuristic Ruby gem, packaged with a hosted web checker and an HTTP API, plus an example-scores table in its own README. RepoScore's README-only signal is currently folded into the same model as repo metadata rather than broken out as its own score Ã¢â‚¬â€ a possible future split.
 
-What RepoScore currently has that neither of those does: an ML model (vs. a fixed formula) with a documented, honestly-reported accuracy/recall trade-off and a caught-and-fixed leakage bug. What it's missing relative to both: a published dataset of scored repos, and (unlike `readme-score`) a hosted HTTP API beyond the Streamlit UI â€” `reposcore_cli.py` above is a step toward the former but not the latter.
+What RepoScore currently has that neither of those does: an ML model (vs. a fixed formula) with a documented, honestly-reported accuracy/recall trade-off and a caught-and-fixed leakage bug. What it's missing relative to both: a published dataset of scored repos, and (unlike `readme-score`) a hosted HTTP API beyond the Streamlit UI Ã¢â‚¬â€ `reposcore_cli.py` above is a step toward the former but not the latter.
 
 ---
 
@@ -266,10 +268,10 @@ What RepoScore currently has that neither of those does: an ML model (vs. a fixe
 
 2. **Uses README content semantically**: The ML model vectorizes README text (TF-IDF, 2000 features) and topic tags (TF-IDF, 500 features), capturing quality signals that a fixed formula cannot: presence of installation docs, contribution guidelines, architecture descriptions, example usage, dependency lists, etc.
 
-3. **Divergence test evidence**: On 15 real-world repositories (FastAPI 101Kâ˜…, Django 88Kâ˜…, Flask 72Kâ˜…, etc.):
-   - **ML scores** range 35â€“75%, correctly differentiating quality tiers
-   - **Heuristic scores** cluster at 83â€“89 (tier A) for 13/15 repos, failing to distinguish quality among top-tier projects
-   - **One exception**: vuejs/vue scores **F (38.25)** due to 683 days since last commit â€” recency dominates the heuristic
+3. **Divergence test evidence**: On 15 real-world repositories (FastAPI 101KÃ¢Ëœâ€¦, Django 88KÃ¢Ëœâ€¦, Flask 72KÃ¢Ëœâ€¦, etc.):
+   - **ML scores** range 35Ã¢â‚¬â€œ75%, correctly differentiating quality tiers
+   - **Heuristic scores** cluster at 83Ã¢â‚¬â€œ89 (tier A) for 13/15 repos, failing to distinguish quality among top-tier projects
+   - **One exception**: vuejs/vue scores **F (38.25)** due to 683 days since last commit Ã¢â‚¬â€ recency dominates the heuristic
    - **Mean delta: -26.9** (heuristic systematically over-scores most repos; severely under-scores stale ones)
 
 ### What the divergence actually reveals
@@ -278,19 +280,19 @@ The divergence test exposes two distinct failure modes in the heuristic scorer:
 
 | Failure Mode | Evidence | Root Cause in `scoring_engine.py` |
 |--------------|----------|-----------------------------------|
-| **Over-scoring active repos** | 13/15 repos get tier A (83â€“89) despite `has_ci=False`, `has_tests=False` for most | `activity` weight (30%) + `community` weight (20%) dominate; `has_ci`/`has_tests` contribute only ~5% each and are often False due to topic-only detection |
-| **Cratering stale repos** | vuejs/vue (210Kâ˜…) drops to **F (38.25)** solely due to 683 days since last commit | Recency penalty applies a harsh decay; no other dimension can compensate |
+| **Over-scoring active repos** | 13/15 repos get tier A (83Ã¢â‚¬â€œ89) despite `has_ci=False`, `has_tests=False` for most | `activity` weight (30%) + `community` weight (20%) dominate; `has_ci`/`has_tests` contribute only ~5% each and are often False due to topic-only detection |
+| **Cratering stale repos** | vuejs/vue (210KÃ¢Ëœâ€¦) drops to **F (38.25)** solely due to 683 days since last commit | Recency penalty applies a harsh decay; no other dimension can compensate |
 
-The ML model avoids both: it produces a calibrated spread (35â€“75%) and does not collapse to a single tier.
+The ML model avoids both: it produces a calibrated spread (35Ã¢â‚¬â€œ75%) and does not collapse to a single tier.
 
 ### Known heuristic failures (confirmed by live data)
 
 | Failure Mode | Root Cause | Impact |
 |--------------|------------|--------|
 | **CI/Tests not detected** | Detection relies only on GitHub *topics* (e.g., `github-actions`, `pytest`), not actual workflow files or test directories | FastAPI, Django, Flask, Requests all show `has_ci: False`, `has_tests: False` despite extensive CI/CD and test suites |
-| **Missing star/ fork weight** | Community dimension caps at 100 points; 10Kâ˜… and 100Kâ˜… repos get identical community scores | No differentiation between popular and extremely popular projects |
+| **Missing star/ fork weight** | Community dimension caps at 100 points; 10KÃ¢Ëœâ€¦ and 100KÃ¢Ëœâ€¦ repos get identical community scores | No differentiation between popular and extremely popular projects |
 | **README scoring too generous** | Any README >500 chars gets 75+ points; 20K char READMEs get only 90 | Cannot distinguish minimal vs comprehensive documentation |
-| **Tier boundary bug** | Non-continuous ranges (80â€“89, 90â€“100) left 89.5 scoring as F | Fixed in v2.1 but indicates insufficient test coverage |
+| **Tier boundary bug** | Non-continuous ranges (80Ã¢â‚¬â€œ89, 90Ã¢â‚¬â€œ100) left 89.5 scoring as F | Fixed in v2.1 but indicates insufficient test coverage |
 | **Recency dominates** | Activity weight (30%) + decay factor overwhelm other signals | Active but CI-less repos score A; stale but popular repos score F |
 
 ### When to use each scorer
@@ -308,7 +310,7 @@ The script `test_scoring_divergence.py` runs on every CI build and:
 - Fetches 15 diverse repos (popular frameworks, CLIs, data science libs)
 - Runs both scorers
 - Fails if mean |delta| > 25 or any repo diverges > 50 points
-- **Current baseline**: mean |delta| = 26.9, max = 52.0 (CI fails â€” this is intentional; the test documents the known gap)
+- **Current baseline**: mean |delta| = 26.9, max = 52.0 (CI fails Ã¢â‚¬â€ this is intentional; the test documents the known gap)
 
 To run manually:
 ```bash

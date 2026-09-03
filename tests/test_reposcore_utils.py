@@ -126,7 +126,7 @@ def test_fetch_repo_features_raises_on_readme_rate_limit(monkeypatch):
     mock_readme_resp.status_code = 403
 
     import requests
-    monkeypatch.setattr(requests, "get", lambda url, headers=None: mock_repo_resp if "/readme" not in url else mock_readme_resp)
+    monkeypatch.setattr(requests, "get", lambda url, headers=None, **kwargs: mock_repo_resp if "/readme" not in url else mock_readme_resp)
 
     try:
         fetch_repo_features("good/repo", headers={})
