@@ -442,12 +442,14 @@ if st.button("Predict Quality", type="primary") and repo_input:
 
             with tab_report:
                 st.markdown("<h3 class=\"section-header\">📑 Quality Report</h3>", unsafe_allow_html=True)
+                if "report_content" not in st.session_state:
+                    st.session_state.report_content = None
                 report_format = st.selectbox("Report Format", ["html", "json"], label_visibility="collapsed")
-                if st.button("Generate Report", type="primary"):
+                if st.button("Generate Report", type="primary", key="generate_report_btn"):
                     with st.spinner("Generating report..."):
                         try:
                             from report_generator import generate_report
-                            report_content = generate_report(
+                            st.session_state.report_content = generate_report(
                                 full_name=features["full_name"],
                                 html_url=features.get("html_url", ""),
                                 features=features,
@@ -456,19 +458,24 @@ if st.button("Predict Quality", type="primary") and repo_input:
                                 combined_score=combined_score if combined_score else (probability * 100 + heuristic_result.get("total_score", 0)) / 2,
                                 format=report_format
                             )
-                            if report_format == "json":
-                                st.json(json.loads(report_content))
-                            else:
-                                st.markdown("### Report Preview")
-                                st.components.v1.html(report_content, height=600, scrolling=True)
-                                report_bytes = report_content.encode()
-                                st.download_button(
-                                    label="Download Report",
-                                    data=report_bytes,
-                                    file_name=f"reposcore_report_{features['full_name'].replace('/', '_')}.html",
-                                    mime="text/html"
-                                )
                         except ImportError:
                             st.caption("Report generator not available")
+                            st.session_state.report_content = None
                         except Exception as err:
                             st.error(f"Report generation failed: {str(err)}")
+                            st.session_state.report_content = None
+                if st.session_state.report_content:
+                    report_content = st.session_state.report_content
+                    if report_format == "json":
+                        st.json(json.loads(report_content))
+                    else:
+                        st.markdown("### Report Preview")
+                        st.components.v1.html(report_content, height=600, scrolling=True)
+                        report_bytes = report_content.encode()
+                        st.download_button(
+                            label="Download Report",
+                            data=report_bytes,
+                            file_name=f"reposcore_report_{features['full_name'].replace('/', '_')}.html",
+                            mime="text/html",
+                            key="download_report_btn"
+                        )
