@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import base64
+import os
 import pickle
 import joblib
 import numpy as np
@@ -18,7 +19,7 @@ try:
 except ImportError:
     AI_REVIEW_AVAILABLE = False
 
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__, '.env')), override=True)
+load_dotenv()
 
 if "NVIDIA_API_KEY" in st.secrets:
     os.environ["NVIDIA_API_KEY"] = st.secrets["NVIDIA_API_KEY"]
@@ -523,5 +524,3 @@ elif st.button("Clear Results", key="clear_btn"):
     st.session_state.repo_input_stored = ""
     st.session_state.report_content = None
     st.rerun()
-
-
