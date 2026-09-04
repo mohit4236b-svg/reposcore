@@ -279,7 +279,7 @@ if st.session_state.prediction_data is not None:
     with tab_overview:
         topics_html = ""
         if topics:
-            topics_html = f'<div style="margin-top: 0.5rem; color: #27ae60;"><strong>Topics:</strong> {", ".join([f"`{t}`" for t in topics])}</div>'
+            topics_html = f<div style="margin-top: 0.5rem; color: #27ae60;"><strong>Topics:</strong> {", ".join([f"`{t}`" for t in topics])}</div>
         components = heuristic_result["components"]
         component_bars_html = ""
         for label, value in [("Maintenance", components["maintenance"]), ("Community", components["community"]), ("Documentation", components["documentation"]), ("Contributors", components["contributors"])]:
