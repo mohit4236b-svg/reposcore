@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 import base64
 import os
 import pickle
@@ -23,6 +23,10 @@ load_dotenv()
 
 if "NVIDIA_API_KEY" in st.secrets:
     os.environ["NVIDIA_API_KEY"] = st.secrets["NVIDIA_API_KEY"]
+st.write("DEBUG - key in st.secrets:", "NVIDIA_API_KEY" in st.secrets)
+st.write("DEBUG - key in os.environ:", "NVIDIA_API_KEY" in os.environ)
+if "NVIDIA_API_KEY" in os.environ:
+    st.write("DEBUG - key length:", len(os.environ["NVIDIA_API_KEY"]))
 
 st.set_page_config(
     page_title="RepoScore",
@@ -237,7 +241,7 @@ if st.session_state.prediction_data is not None:
     combined_score = data["combined_score"]
     divergence = data["divergence"]
 
-    st.subheader(f"Results for [{features["full_name"]}]({features["html_url"]})")
+    st.subheader(f"Results for [{features['full_name']}]({features['html_url']})")
 
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("⭐ Stars", features["stars"])
@@ -274,7 +278,7 @@ if st.session_state.prediction_data is not None:
     st.divider()
     render_verdict_banner(prediction, probability)
 
-    tab_overview, tab_why, tab_ai, tab_security, tab_trends, tab_report = st.tabs(["📊 Overview", "🔍 Why This Score?", "🤖 AI Review", "🛡️ Security", "📈 Trends", "📑 Report"])
+    tab_overview, tab_why, tab_ai, tab_security, tab_trends, tab_report = st.tabs(["📊 Overview", "🔍 Why This Score?", "🤖 AI Review", "🐛¡ï¸ Security", "📈 Trends", "📑 Report"])
 
     with tab_overview:
         topics_html = ""
@@ -396,7 +400,7 @@ if st.session_state.prediction_data is not None:
             st.caption("AI review unavailable: ai_review module not found.")
 
     with tab_security:
-        st.markdown("<h3 class=\"section-header\">🛡️ Security Analysis</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 class=\"section-header\">🐛¡ï¸ Security Analysis</h3>", unsafe_allow_html=True)
         with st.spinner("Scanning for vulnerabilities..."):
             try:
                 from security_scanner import scan_repository
