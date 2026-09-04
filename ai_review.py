@@ -1,4 +1,4 @@
-import os
+﻿import os
 import time
 import logging
 import shutil
@@ -159,8 +159,7 @@ def N(readme_content: str, features: dict, prediction: int, probability: float) 
             logger.info(f"NVIDIA API call attempt {attempt + 1}/{max_retries + 1}, prompt length: {len(pt)}")
             c = OpenAI(
                 base_url="https://integrate.api.nvidia.com/v1",
-                api_key=k,
-                default_headers={"Authorization": f"Bearer {k}"}
+                api_key=k
             )
             resp = c.chat.completions.create(
                 model="nvidia/nemotron-3-ultra-550b-a55b",
