@@ -384,7 +384,8 @@ if st.session_state.prediction_data is not None:
                     return generate_ai_review(readme_content=readme_text_clean, features=features_dict, prediction=prediction, probability=probability)
                 readme_text = features.get("readme_text_clean", "")
                 features_hashable = tuple(sorted(features.items()))
-                ai_result = _cached_ai_review(readme_text, features_hashable, prediction, probability)
+                with st.spinner("Generating AI review..."):
+                    ai_result = _cached_ai_review(readme_text, features_hashable, prediction, probability)
                 if ai_result.get("status") == "success":
                     with st.container(border=True):
                         st.markdown(format_ai_review_for_display(ai_result))
@@ -524,4 +525,3 @@ elif st.button("Clear Results", key="clear_btn"):
     st.session_state.repo_input_stored = ""
     st.session_state.report_content = None
     st.rerun()
-
