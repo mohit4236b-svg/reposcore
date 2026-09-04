@@ -4,7 +4,7 @@
 
 RepoScore predicts whether a GitHub repository is likely to be a "high-quality" project based on its metadata, README content, and topic tags. Enter any public GitHub repo and get an instant quality prediction, powered by a Random Forest classifier trained on ~2,200 real repositories.
 
-**Live demo:** [reposcoree.streamlit.app](https://reposcoree.streamlit.app/) â€” paste a repo (e.g. `scikit-learn/scikit-learn`) and get a prediction with confidence score and a feature-level explanation.
+**Live demo:** [reposcoree.streamlit.app](https://reposcoree.streamlit.app/) ⭐ paste a repo (e.g. `scikit-learn/scikit-learn`) and get a prediction with confidence score and a feature-level explanation.
 
 ---
 
