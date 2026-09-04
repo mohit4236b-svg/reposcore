@@ -1,6 +1,5 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 import base64
-import os
 import pickle
 import joblib
 import numpy as np
@@ -19,14 +18,14 @@ try:
 except ImportError:
     AI_REVIEW_AVAILABLE = False
 
-load_dotenv()
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__, '.env')), override=True)
 
 if "NVIDIA_API_KEY" in st.secrets:
     os.environ["NVIDIA_API_KEY"] = st.secrets["NVIDIA_API_KEY"]
 
 st.set_page_config(
     page_title="RepoScore",
-    page_icon="â­",
+    page_icon="⭐",
     layout="wide"
 )
 
@@ -56,15 +55,15 @@ def render_component_bar(label, value, max_value=100):
 
 def render_verdict_banner(prediction, probability):
     css_class = "rs-verdict-high" if prediction == 1 else "rs-verdict-low"
-    icon = "âœ…" if prediction == 1 else "âš ï¸"
+    icon = "✅" if prediction == 1 else "⚠️"
     label = "High Quality Repository" if prediction == 1 else "Low Quality / Unmaintained Repository"
     st.markdown(f'<div class="{css_class}"><span style="font-size:1.2em;font-weight:600;">{icon} Predicted: {label}</span><span style="float:right;font-size:1.1em;">Model Confidence: {probability:.1%}</span></div>', unsafe_allow_html=True)
 
 def render_note(text):
-    st.markdown(f'<div class="rs-note">â„¹ï¸ {text}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="rs-note">ℹ️ {text}</div>', unsafe_allow_html=True)
 
 def render_caution(text):
-    st.markdown(f'<div class="rs-caution">âš ï¸ {text}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="rs-caution">⚠️ {text}</div>', unsafe_allow_html=True)
 
 def render_card(content_html):
     st.markdown(f'<div class="rs-card">{content_html}</div>', unsafe_allow_html=True)
@@ -90,12 +89,12 @@ def load_ml_assets():
     for key, filename in files.items():
         file_path = os.path.join(model_dir, filename)
         if not os.path.exists(file_path):
-            st.error(f"â­ Missing file: `{filename}` was not found in the `models/` directory.")
+            st.error(f"⭐ Missing file: `{filename}` was not found in the `models/` directory.")
             st.stop()
         try:
             loaded[key] = safe_load(file_path)
         except Exception as err:
-            st.error(f"â­ Failed loading `{filename}`:")
+            st.error(f"⭐ Failed loading `{filename}`:")
             st.exception(err)
             st.stop()
     return loaded["rf_model"], loaded["tfidf_readme"], loaded["tfidf_topics"], loaded["scaler"]
@@ -145,7 +144,7 @@ def log_audit_trail(features, probability, prediction, threshold, caveats=None):
 
 rf_model, tfidf_readme, tfidf_topics, scaler = load_ml_assets()
 
-st.title("â­ RepoScore: GitHub Repository Quality Predictor")
+st.title("⭐ RepoScore: GitHub Repository Quality Predictor")
 st.caption("Analyze a public GitHub repository to predict its overall quality score.")
 
 # Initialize session state
@@ -240,10 +239,10 @@ if st.session_state.prediction_data is not None:
     st.subheader(f"Results for [{features["full_name"]}]({features["html_url"]})")
 
     col1, col2, col3, col4 = st.columns(4)
-    col1.metric("â­ Stars", features["stars"])
-    col2.metric("ðŸ´ Forks", features["forks"])
-    col3.metric("ðŸ› Open Issues", features["open_issues"])
-    col4.metric("ðŸ“… Age (Days)", repo_age_days)
+    col1.metric("⭐ Stars", features["stars"])
+    col2.metric("🍴 Forks", features["forks"])
+    col3.metric("🐛 Open Issues", features["open_issues"])
+    col4.metric("📅 Age (Days)", repo_age_days)
 
     if topics:
         st.write("**Topics:** " + ", ".join([f"`{t}`" for t in topics]))
@@ -253,17 +252,17 @@ if st.session_state.prediction_data is not None:
     if combined_score is not None:
         if combined_score >= 70:
             score_color = "green"
-            score_emoji = "ðŸŸ¢"
+            score_emoji = "🟢"
         elif combined_score >= 40:
             score_color = "orange"
-            score_emoji = "ðŸŸ¡"
+            score_emoji = "🟡"
         else:
             score_color = "red"
-            score_emoji = "ðŸ”´"
-        score_card_html = f'<h2 class="section-header">â­ Combined Score: {combined_score:.1f}/100 {score_emoji}</h2><div style="margin-bottom: 1rem;"><div style="background-color: #2d3548; border-radius: 6px; height: 20px; overflow: hidden;"><div style="background-color: {score_color}; width: {combined_score}%; height: 100%; border-radius: 6px; transition: width 0.3s ease;"></div></div><div style="font-size: 0.9em; color: #cbd5e0; margin-top: 0.5rem;">{combined_score:.1f}% â€” 50% ML Model + 50% Heuristic</div></div><div style="display: flex; gap: 1rem; margin-top: 1rem;"><div style="flex: 1; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;"><div style="font-size: 0.85em; color: #94a3b8;">ML Model</div><div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{data["ml_score_pct"]:.1f}%</div></div><div style="flex: 1; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;"><div style="font-size: 0.85em; color: #94a3b8;">Heuristic</div><div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{data["heuristic_score"]:.1f}/100</div></div><div style="flex: 1; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;"><div style="font-size: 0.85em; color: #94a3b8;">Divergence</div><div style="font-size: 1.5em; font-weight: 600; color: {"#f87171" if abs(divergence) > 15 else "#e2e8f0"};">{divergence:+.1f}</div></div></div>'
+            score_emoji = "🔴"
+        score_card_html = f'<h2 class="section-header">⭐ Combined Score: {combined_score:.1f}/100 {score_emoji}</h2><div style="margin-bottom: 1rem;"><div style="background-color: #2d3548; border-radius: 6px; height: 20px; overflow: hidden;"><div style="background-color: {score_color}; width: {combined_score}%; height: 100%; border-radius: 6px; transition: width 0.3s ease;"></div></div><div style="font-size: 0.9em; color: #cbd5e0; margin-top: 0.5rem;">{combined_score:.1f}% — 50% ML Model + 50% Heuristic</div></div><div style="display: flex; gap: 1rem; margin-top: 1rem;"><div style="flex: 1; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;"><div style="font-size: 0.85em; color: #94a3b8;">ML Model</div><div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{data["ml_score_pct"]:.1f}%</div></div><div style="flex: 1; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;"><div style="font-size: 0.85em; color: #94a3b8;">Heuristic</div><div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{data["heuristic_score"]:.1f}/100</div></div><div style="flex: 1; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;"><div style="font-size: 0.85em; color: #94a3b8;">Divergence</div><div style="font-size: 1.5em; font-weight: 600; color: {"#f87171" if abs(divergence) > 15 else "#e2e8f0"};">{divergence:+.1f}</div></div></div>'
         render_card(score_card_html)
         if divergence > 15:
-            render_caution(f"ML and Heuristic scores diverge by {divergence:.1f} points â€” treat this combined score with caution; review both scores individually in the **Why This Score?** tab.")
+            render_caution(f"ML and Heuristic scores diverge by {divergence:.1f} points — treat this combined score with caution; review both scores individually in the **Why This Score?** tab.")
 
     confidence_html = f'<div style="font-size: 0.95em; color: #cbd5e0;">Confidence report: <strong>{probability:.1%}</strong> match rate | {total_issues} exception{"s" if total_issues != 1 else ""} flagged</div>'
     render_card(confidence_html)
@@ -274,7 +273,7 @@ if st.session_state.prediction_data is not None:
     st.divider()
     render_verdict_banner(prediction, probability)
 
-    tab_overview, tab_why, tab_ai, tab_security, tab_trends, tab_report = st.tabs(["ðŸ“Š Overview", "ðŸ” Why This Score?", "ðŸ¤– AI Review", "ðŸ›¡ï¸ Security", "ðŸ“ˆ Trends", "ðŸ“‘ Report"])
+    tab_overview, tab_why, tab_ai, tab_security, tab_trends, tab_report = st.tabs(["📊 Overview", "🔍 Why This Score?", "🤖 AI Review", "🛡️ Security", "📈 Trends", "📑 Report"])
 
     with tab_overview:
         topics_html = ""
@@ -290,11 +289,11 @@ if st.session_state.prediction_data is not None:
         if exceptions or low_confidence:
             notes = []
             for exc in exceptions:
-                notes.append(f'<div class="rs-note">â„¹ï¸ {exc}</div>')
+                notes.append(f'<div class="rs-note">ℹ️ {exc}</div>')
             if low_confidence:
-                notes.append('<div class="rs-note">â„¹ï¸ Low confidence prediction (probability near 0.5).</div>')
+                notes.append('<div class="rs-note">ℹ️ Low confidence prediction (probability near 0.5).</div>')
             data_quality_html = f'<div style="margin-top: 1rem;"><strong>Data Quality Notes</strong>{"".join(notes)}</div>'
-        overview_card_html = f'<h3 class="section-header">ðŸ“Š Overview</h3><div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;"><div style="flex: 1; min-width: 120px; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;"><div style="font-size: 0.85em; color: #94a3b8;">â­ Stars</div><div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{features["stars"]}</div></div><div style="flex: 1; min-width: 120px; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;"><div style="font-size: 0.85em; color: #94a3b8;">ðŸ´ Forks</div><div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{features["forks"]}</div></div><div style="flex: 1; min-width: 120px; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;"><div style="font-size: 0.85em; color: #94a3b8;">ðŸ› Open Issues</div><div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{features["open_issues"]}</div></div><div style="flex: 1; min-width: 120px; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;"><div style="font-size: 0.85em; color: #94a3b8;">ðŸ“… Age (Days)</div><div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{repo_age_days}</div></div></div>{topics_html}<div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #2d3548;"><div style="font-size: 0.95em; color: #cbd5e0; margin-bottom: 0.5rem;"><strong>Threshold used:</strong> 0.5</div><div style="font-size: 0.95em; color: #cbd5e0; margin-bottom: 0.5rem;"><strong>Model probability:</strong> {probability:.1%}</div><div style="font-size: 0.95em; color: #cbd5e0; margin-bottom: 1rem;"><strong>Prediction:</strong> {"High Quality" if prediction == 1 else "Low Quality / Unmaintained"}</div></div><div style="margin-top: 1rem;"><strong style="color: #e2e8f0;">Component Scores</strong>{component_bars_html}</div>{data_quality_html}'
+        overview_card_html = f'<h3 class="section-header">📊 Overview</h3><div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;"><div style="flex: 1; min-width: 120px; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;"><div style="font-size: 0.85em; color: #94a3b8;">⭐ Stars</div><div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{features["stars"]}</div></div><div style="flex: 1; min-width: 120px; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;"><div style="font-size: 0.85em; color: #94a3b8;">🍴 Forks</div><div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{features["forks"]}</div></div><div style="flex: 1; min-width: 120px; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;"><div style="font-size: 0.85em; color: #94a3b8;">🐛 Open Issues</div><div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{features["open_issues"]}</div></div><div style="flex: 1; min-width: 120px; text-align: center; padding: 0.75rem; background: #2d3548; border-radius: 6px;"><div style="font-size: 0.85em; color: #94a3b8;">📅 Age (Days)</div><div style="font-size: 1.5em; font-weight: 600; color: #e2e8f0;">{repo_age_days}</div></div></div>{topics_html}<div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #2d3548;"><div style="font-size: 0.95em; color: #cbd5e0; margin-bottom: 0.5rem;"><strong>Threshold used:</strong> 0.5</div><div style="font-size: 0.95em; color: #cbd5e0; margin-bottom: 0.5rem;"><strong>Model probability:</strong> {probability:.1%}</div><div style="font-size: 0.95em; color: #cbd5e0; margin-bottom: 1rem;"><strong>Prediction:</strong> {"High Quality" if prediction == 1 else "Low Quality / Unmaintained"}</div></div><div style="margin-top: 1rem;"><strong style="color: #e2e8f0;">Component Scores</strong>{component_bars_html}</div>{data_quality_html}'
         render_card(overview_card_html)
 
     with tab_why:
@@ -331,11 +330,11 @@ if st.session_state.prediction_data is not None:
             with feat_col1:
                 st.markdown("**Pushed toward High Quality**")
                 for _, row in top_pos.iterrows():
-                    st.markdown(f":green[âœ… {row['feature']} (+{row['shap_value']:.3f})]")
+                    st.markdown(f":green[✅ {row['feature']} (+{row['shap_value']:.3f})]")
             with feat_col2:
                 st.markdown("**Pushed toward Low Quality**")
                 for _, row in top_neg.iterrows():
-                    st.markdown(f":red[âš ï¸ {row['feature']} ({row['shap_value']:.3f})]")
+                    st.markdown(f":red[⚠️ {row['feature']} ({row['shap_value']:.3f})]")
         except Exception as err:
             st.caption(f"Explanation unavailable: {err}")
 
@@ -363,19 +362,19 @@ if st.session_state.prediction_data is not None:
                 delta = ml_score_pct_local - heuristic_score_local
                 st.write(f"**Delta vs ML Model:** {delta:+.1f} points")
                 if abs(delta) > 15:
-                    render_caution(f"ML and Heuristic scores diverge by {abs(delta):.1f} points â€” treat this combined score with caution.")
+                    render_caution(f"ML and Heuristic scores diverge by {abs(delta):.1f} points — treat this combined score with caution.")
                 else:
-                    st.caption("âœ… Scores are well-aligned between ML model and heuristic scorer.")
+                    st.caption("✅ Scores are well-aligned between ML model and heuristic scorer.")
                 if heuristic_result_local.get("explanations"):
                     st.write("**Explanations:**")
                     for exp in heuristic_result_local["explanations"][:3]:
-                        st.write(f"â€¢ {exp}")
+                        st.write(f"• {exp}")
                 st.markdown('</div>', unsafe_allow_html=True)
             except Exception as err:
                 st.caption(f"Heuristic score unavailable: {err}")
 
     with tab_ai:
-        st.markdown("<h3 class=\"section-header\">ðŸ¤– AI Review</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 class=\"section-header\">🤖 AI Review</h3>", unsafe_allow_html=True)
         if AI_REVIEW_AVAILABLE:
             try:
                 @st.cache_data(ttl=86400, show_spinner=False)
@@ -396,7 +395,7 @@ if st.session_state.prediction_data is not None:
             st.caption("AI review unavailable: ai_review module not found.")
 
     with tab_security:
-        st.markdown("<h3 class=\"section-header\">ðŸ›¡ï¸ Security Analysis</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 class=\"section-header\">🛡️ Security Analysis</h3>", unsafe_allow_html=True)
         with st.spinner("Scanning for vulnerabilities..."):
             try:
                 from security_scanner import scan_repository
@@ -409,10 +408,10 @@ if st.session_state.prediction_data is not None:
                         scan_result = scan_repository(repo_path)
                         vuln_col1, vuln_col2, vuln_col3, vuln_col4 = st.columns(4)
                         vuln_col1.metric("Total", scan_result.total_vulnerabilities)
-                        vuln_col2.metric("Critical", scan_result.critical_count, delta="ðŸš¨" if scan_result.critical_count > 0 else None)
-                        vuln_col3.metric("High", scan_result.high_count, delta="âš ï¸" if scan_result.high_count > 0 else None)
+                        vuln_col2.metric("Critical", scan_result.critical_count, delta="🚨" if scan_result.critical_count > 0 else None)
+                        vuln_col3.metric("High", scan_result.high_count, delta="⚠️" if scan_result.high_count > 0 else None)
                         vuln_col4.metric("Medium", scan_result.medium_count)
-                        risk_color = {"CRITICAL": "ðŸš¨", "HIGH": "âš ï¸", "MEDIUM": "âš¡", "LOW": "â„¹ï¸", "NONE": "âœ…"}
+                        risk_color = {"CRITICAL": "🚨", "HIGH": "⚠️", "MEDIUM": "⚡", "LOW": "ℹ️", "NONE": "✅"}
                         st.markdown(f"**Risk Level:** {risk_color.get(scan_result.risk_level, '?')} {scan_result.risk_level}")
                         st.markdown(f"**Scan Method:** {scan_result.scan_method}")
                         st.markdown(f"**Dependencies Found:** {scan_result.dependencies_found}")
@@ -426,7 +425,7 @@ if st.session_state.prediction_data is not None:
                                     if vuln.fix_version:
                                         st.markdown(f"**Fix Version:** {vuln.fix_version}")
                         else:
-                            st.success("No vulnerabilities detected! ðŸŽ‰")
+                            st.success("No vulnerabilities detected! 🎉")
                     finally:
                         shutil.rmtree(repo_path, ignore_errors=True)
                 else:
@@ -436,7 +435,7 @@ if st.session_state.prediction_data is not None:
             except Exception as err:
                 st.error(f"Security scan failed: {str(err)}")
         st.divider()
-        st.markdown("<h4 class=\"section-header\">ðŸ“„ License Check</h4>", unsafe_allow_html=True)
+        st.markdown("<h4 class=\"section-header\">📄 License Check</h4>", unsafe_allow_html=True)
         try:
             from license_checker import check_license_from_repo
             lic_result = check_license_from_repo(None, github_license=features.get("_license_data"))
@@ -444,7 +443,7 @@ if st.session_state.prediction_data is not None:
             lic_col1.markdown(f"**License:** {lic_result.license_info.name if lic_result.license_info else 'Unknown'}")
             lic_col1.markdown(f"**SPDX:** {lic_result.license_info.spdx_id if lic_result.license_info else 'NOASSERTION'}")
             lic_col2.markdown(f"**Compliance Score:** {lic_result.compliance_score}/100")
-            lic_col2.markdown(f"**Commercial Compatible:** {'âœ… Yes' if lic_result.commercial_compatible else 'âŒ No'}")
+            lic_col2.markdown(f"**Commercial Compatible:** {'✅ Yes' if lic_result.commercial_compatible else '❌ No'}")
             if lic_result.warnings:
                 for warning in lic_result.warnings:
                     render_caution(warning)
@@ -454,7 +453,7 @@ if st.session_state.prediction_data is not None:
             st.caption(f"License check unavailable: {str(err)}")
 
     with tab_trends:
-        st.markdown("<h3 class=\"section-header\">ðŸ“ˆ Trend Analysis</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 class=\"section-header\">📈 Trend Analysis</h3>", unsafe_allow_html=True)
         with st.spinner("Analyzing trends..."):
             try:
                 from trends_analyzer import analyze_repository, get_trend_summary
@@ -479,7 +478,7 @@ if st.session_state.prediction_data is not None:
                 st.error(f"Trend analysis failed: {str(err)}")
 
     with tab_report:
-        st.markdown("<h3 class=\"section-header\">ðŸ“‘ Quality Report</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 class=\"section-header\">📑 Quality Report</h3>", unsafe_allow_html=True)
         if "report_content" not in st.session_state:
             st.session_state.report_content = None
         report_format = st.selectbox("Report Format", ["html", "json"], label_visibility="collapsed")
@@ -524,4 +523,5 @@ elif st.button("Clear Results", key="clear_btn"):
     st.session_state.repo_input_stored = ""
     st.session_state.report_content = None
     st.rerun()
+
 
